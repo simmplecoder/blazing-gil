@@ -3,6 +3,10 @@ project(blazing-gil)
 
 option(BOOST_INCLUDE_DIR "set this to your boost root folder")
 
+if (NOT ${BOOST_INCLUDE_DIR})
+  message(FATAL_ERROR "please set boost include dir")
+endif()
+
 find_package(blaze REQUIRED)
 
 add_library(gil_io_dependencies INTERFACE)
@@ -42,6 +46,11 @@ target_link_libraries(gil_io_dependencies
     PNG::PNG
     TIFF::TIFF)
 
+
+add_library(blazing-gil INTERFACE)
+target_include_directories(blazing-gil INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(blazing-gil INTERFACE gil_io_dependencies)
+
 add_executable(program main.cpp)
-target_link_libraries(program PRIVATE gil_io_dependencies) # ${JPEG_LIBRARIES} PNG::PNG TIFF::TIFF blaze::blaze
+target_link_libraries(program PRIVATE blazing-gil) # ${JPEG_LIBRARIES} PNG::PNG TIFF::TIFF blaze::blaze
 # target_include_directories(program PUBLIC ${BOOST_INCLUDE_DIR} ${JPEG_INCLUDE_DIR})
