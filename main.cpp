@@ -25,7 +25,6 @@ int main(int argc, char* argv[])
     blaze::DynamicMatrix<std::int16_t> mat(image);
     auto dx = flash::convolve(mat, flash::sobel_x);
 
-    flash::kernel2d<std::int16_t> kernel_y{{1, 2, 1}, {0, 0, 0}, {-1, -2, -1}};
     auto dy = flash::convolve(mat, flash::sobel_y);
 
     auto gradient = blaze::map(dx, dy, [](std::int16_t x, std::int16_t y)
@@ -35,8 +34,8 @@ int main(int argc, char* argv[])
 
     image = flash::remap_to<unsigned char>(gradient);
 
-    std::cout << static_cast<int>(blaze::max(image)) << ' ' << blaze::max(gradient) << '\n'
-              << static_cast<int>(blaze::min(image)) << ' ' << blaze::min(gradient) << '\n';
+    std::cout << "Gradient range: " << blaze::max(gradient) << ' ' << blaze::min(gradient) << '\n'
+              << "Final gray image range: " << static_cast<int>(blaze::max(image)) << ' ' << static_cast<int>(blaze::min(image)) << '\n';
     gil::write_view(argv[2], gil::view(gray), gil::png_tag{});
 }
 
