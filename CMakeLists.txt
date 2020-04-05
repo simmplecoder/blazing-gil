@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 3.15)
 project(blazing-gil)
 
-option(BOOST_INCLUDE_DIR "set this to your boost root folder")
+set(CMAKE_CXX_STANDARD 17)
 
-if (NOT ${BOOST_INCLUDE_DIR})
+option(BOOST_INCLUDE_DIR "set this to your boost root folder" "")
+
+if (${BOOST_INCLUDE_DIR} EQUAL "")
   message(FATAL_ERROR "please set boost include dir")
 endif()
 
