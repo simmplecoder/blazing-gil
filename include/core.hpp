@@ -27,12 +27,15 @@ auto to_matrix(GrayView source)
 
 // perform linear mapping from source range to destination range
 // only use with blaze::min and blaze::max 
+// note that this is intended to narrow from source range
+// to destination range
 template <typename U, typename SourceMatrix, typename T>
 auto remap_to(const SourceMatrix& source, T src_min, T src_max, U dst_min = std::numeric_limits<U>::min(), U dst_max = std::numeric_limits<U>::max())
 {
-    return blaze::map(source, [src_min, src_max, dst_min, dst_max](T value) {
+    // ensure that dst_max - dst_min will not overflow
+    return blaze::map(source, [src_min, dst_min, src_length = src_max - src_min, dst_length = static_cast<T>(dst_max) - dst_min](T value) {
         // attempt to avoid integral inaccuracy
-        return static_cast<unsigned char>(dst_min + static_cast<double>(value - src_min) / src_max * dst_max);
+        return static_cast<U>(dst_min + static_cast<double>(value - src_min) / src_length * dst_length);
     });
 }
 
