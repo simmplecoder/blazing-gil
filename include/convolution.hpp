@@ -1,6 +1,5 @@
 #include <blaze/math/dense/DynamicMatrix.h>
 #include <blaze/math/dense/StaticMatrix.h>
-#include <blaze/math/dense/StaticMatrix.h>
 #include <blaze/math/Submatrix.h>
 #include <blaze/math/expressions/DMatGenExpr.h>
 
