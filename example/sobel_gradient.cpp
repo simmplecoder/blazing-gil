@@ -1,9 +1,9 @@
-#include "libs/gil/include/boost/gil/image_view_factory.hpp"
 #include <blaze/util/algorithms/Max.h>
 #include <boost/gil/algorithm.hpp>
 #include <boost/gil/image.hpp>
 #include <boost/gil/image_view.hpp>
 #include <boost/gil/extension/io/png.hpp>
+#include <boost/gil/extension/io/jpeg.hpp>
 #include <boost/gil/typedefs.hpp>
 
 #include <iostream>
@@ -37,6 +37,7 @@ int main(int argc, char* argv[])
 
     std::cout << "Gradient range: " << blaze::max(gradient) << ' ' << blaze::min(gradient) << '\n'
               << "Final gray image range: " << static_cast<int>(blaze::max(image)) << ' ' << static_cast<int>(blaze::min(image)) << '\n';
-    gil::write_view(argv[2], gil::color_converted_view<gil::gray16_pixel_t>(gil::view(gray)), gil::png_tag{});
+    // gil::write_view(argv[2], gil::color_converted_view<gil::gray16_pixel_t>(gil::view(gray)), gil::png_tag{});
+    gil::write_view(argv[2], gil::view(gray), gil::jpeg_tag{});
 }
 
