@@ -71,11 +71,11 @@ blaze::DynamicMatrix<T> convolve(const blaze::DynamicMatrix<T>& source, const Ke
         return result;
     }
 
-    for (std::size_t i = kernel_size; i < m - kernel_size; ++i)
+    for (std::size_t i = kernel_size; i < m; ++i)
     {
-        for (std::size_t j = kernel_size; j < n - kernel_size; ++j)
+        for (std::size_t j = kernel_size; j < n; ++j)
         {
-            auto current = blaze::submatrix(source, i, j, kernel_size, kernel_size);
+            auto current = blaze::submatrix(source, i - kernel_size, j - kernel_size, kernel_size, kernel_size);
             result(i, j) = blaze::sum(current % kernel);
         }
     }

@@ -18,12 +18,22 @@ int main(int argc, char* argv[])
     gil::rgb8_image_t input;
     gil::read_image(argv[1], input, gil::png_tag{});
 
+    double k = std::stod(argv[4]);
+    std::int64_t threshold = std::stoll(argv[5]);
+
     gil::gray8_image_t gray(input.dimensions());
     gil::copy_and_convert_pixels(gil::view(input), gil::view(gray));
 
     auto image = flash::to_matrix(gil::view(gray));
     blaze::DynamicMatrix<std::int16_t> mat(image);
-    auto harris = flash::harris(mat, 0.04);
+    auto harris = flash::harris(mat, k);
+    harris = blaze::map(harris, [](std::int64_t x)
+    {
+        if (x >= 0)
+            return x;
+        else 
+            return static_cast<std::int64_t>(0);
+    });
 
     image = flash::remap_to<unsigned char>(harris);
     const auto max_value = blaze::max(harris);
@@ -31,7 +41,7 @@ int main(int argc, char* argv[])
     {
         for (std::size_t j = 0; j < image.columns(); ++j)
         {
-            if (image(i, j) >= 250)
+            if (harris(i, j) >= threshold)
             {
                 gil::view(input)(j, i) = gil::rgb8_pixel_t(0, 255, 0);
             }

@@ -10,7 +10,7 @@
 #include <convolution.hpp>
 
 namespace flash{
-blaze::DynamicMatrix<std::int16_t> harris(const blaze::DynamicMatrix<std::int32_t>& image, double k)
+blaze::DynamicMatrix<std::int64_t> harris(const blaze::DynamicMatrix<std::int64_t>& image, double k)
 {
     auto dx = flash::convolve(image, flash::sobel_x);
     auto dy = flash::convolve(image, flash::sobel_y);
