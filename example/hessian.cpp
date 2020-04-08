@@ -18,7 +18,8 @@ int main(int argc, char* argv[])
     gil::rgb8_image_t input;
     gil::read_image(argv[1], input, gil::png_tag{});
 
-    std::int64_t threshold = std::stoll(argv[4]);
+    std::int32_t dets_threshold = std::stol(argv[5]);
+    std::int32_t traces_threshold = std::stol(argv[6]);
 
     gil::gray8_image_t gray(input.dimensions());
     gil::copy_and_convert_pixels(gil::view(input), gil::view(gray));
@@ -26,31 +27,27 @@ int main(int argc, char* argv[])
     auto image = flash::to_matrix(gil::view(gray));
     blaze::DynamicMatrix<std::int16_t> mat(image);
     auto hessian_result = flash::hessian(mat);
-    auto& hessian = hessian_result.determinants;
-    hessian = blaze::map(hessian, [](std::int64_t x)
-    {
-        if (x >= 0)
-            return x;
-        else 
-            return static_cast<std::int64_t>(0);
-    });
+    auto thresholded_dets = blaze::evaluate(blaze::map(hessian_result.determinants, [dets_threshold](auto x) {return x < dets_threshold ? 0 :x;}));
+    auto thresholded_traces = blaze::evaluate(blaze::map(hessian_result.traces, [traces_threshold](auto x) {return x < traces_threshold ? 0 :x;}));
+    auto dets_nonmax_map = flash::nonmax_map(thresholded_dets, 3);
+    auto trace_nonmax_map = flash::nonmax_map(thresholded_traces, 3);
 
-    image = flash::remap_to<unsigned char>(hessian);
-    const auto max_value = blaze::max(hessian);
+    auto determinants_map = flash::to_gray8_image(flash::remap_to<unsigned char>(hessian_result.determinants));
+    auto traces_map = flash::to_gray8_image(flash::remap_to<unsigned char>(hessian_result.traces));
     for (std::size_t i = 0; i < image.rows(); ++i)
     {
         for (std::size_t j = 0; j < image.columns(); ++j)
         {
-            if (hessian(i, j) >= threshold)
+            if (!dets_nonmax_map(i, j) || !trace_nonmax_map(i, j))
             {
                 gil::view(input)(j, i) = gil::rgb8_pixel_t(0, 255, 0);
             }
         }
     }
 
-    std::cout << "Gradient range: " << blaze::max(hessian) << ' ' << blaze::min(hessian) << '\n'
+    std::cout << "Gradient range: " << blaze::max(hessian_result.determinants) << ' ' << blaze::min(hessian_result.determinants) << '\n'
               << "Final gray image range: " << static_cast<int>(blaze::max(image)) << ' ' << static_cast<int>(blaze::min(image)) << '\n';
-    // gil::write_view(argv[2], gil::color_converted_view<gil::gray16_pixel_t>(gil::view(gray)), gil::png_tag{});
-    gil::write_view(argv[2], gil::view(gray), gil::png_tag{});
-    gil::write_view(argv[3], gil::view(input), gil::png_tag{});
+    gil::write_view(argv[2], gil::view(determinants_map), gil::png_tag{});
+    gil::write_view(argv[3], gil::view(traces_map), gil::png_tag{});
+    gil::write_view(argv[4], gil::view(input), gil::png_tag{});
 }

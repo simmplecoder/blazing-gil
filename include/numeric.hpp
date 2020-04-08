@@ -8,11 +8,13 @@
 #include <blaze/math/expressions/DMatScalarMultExpr.h>
 #include <blaze/math/expressions/DMatScalarDivExpr.h>
 #include <blaze/math/expressions/Matrix.h>
+#include <blaze/math/views/Forward.h>
 #include <blaze/math/views/Submatrix.h>
 #include <convolution.hpp>
 
 #include <cstdint>
 #include <iostream>
+#include <algorithm>
 
 namespace flash{
 namespace detail
@@ -24,6 +26,42 @@ namespace detail
     }
 }
 
+template <typename T>
+blaze::DynamicMatrix<bool> nonmax_map(const blaze::DynamicMatrix<T>& input, std::size_t window_size, bool padding_value = false)
+{
+    const auto middle = window_size / 2 + 1;
+    blaze::DynamicMatrix<bool> result(input.rows(), input.columns(), padding_value);
+    // will substract window_size, thus until .rows()
+    for (std::size_t i = window_size; i < input.rows(); ++i)
+    {
+        // will substract window_size, thus until .columns()
+        for (std::size_t j = window_size; j < input.columns(); ++j)
+        {
+            auto submatrix = blaze::submatrix(input, i - window_size, j - window_size, window_size, window_size);
+            auto max = blaze::max(submatrix);
+            auto other_max_flag = false;
+            for (std::size_t ii = 0; ii < window_size; ++ii)
+            {
+                for (std::size_t jj = 0; jj < window_size; ++jj)
+                {
+                    if (ii == middle && jj == middle)
+                    {
+                        continue;
+                    }
+                    if (submatrix(ii, jj) == max)
+                    {
+                        other_max_flag = true;
+                        break;
+                    }
+                }
+            }
+
+            result(i, j) = other_max_flag && (max == submatrix(middle, middle));
+        }
+    }
+
+    return result;
+}
 
 blaze::DynamicMatrix<std::int64_t> harris(const blaze::DynamicMatrix<std::int64_t>& image, double k)
 {
@@ -92,23 +130,6 @@ blaze::DynamicMatrix<double> anisotropic_diffusion(const blaze::DynamicMatrix<st
         auto c_sw = detail::compute_diffusivity(nabla_sw, kappa);
 
         const auto half = 1 / 2.0;
-        // blaze::DynamicMatrix<double> one_eighth_sum = c_north % nabla_north;  //c_north % nabla_north + ;
-        // std::cout << "computed 1/8 sum\n" << one_eighth_sum.rows() << ' ' << one_eighth_sum.columns() << '\n';
-        // blaze::DynamicMatrix<double> second_eighth_sum = c_south % nabla_south;
-        // std::cout << "computed 2/8 sum\n";
-        // auto quarter_sum = one_eighth_sum + second_eighth_sum;
-        // std::cout << "computed quarter_sum\n";
-        // blaze::DynamicMatrix<double> second_half_sum = ((c_ne % nabla_ne) * half) + ((c_nw % nabla_nw) * half)
-        //     + ((c_se % nabla_se) * half) + ((c_sw % nabla_sw) * half);
-        // std::cout << output_area_dims[0] << ' ' << output_area_dims[1] << ' ' << one_eighth_sum.rows() << ' ' << one_eighth_sum.columns() 
-        //     << ' ' << second_eighth_sum.rows() << ' ' << second_eighth_sum.columns() 
-        //     << ' ' << quarter_sum.rows() << ' ' << quarter_sum.columns() << ' ' << second_half_sum.rows() << ' ' << second_half_sum.columns() <<'\n';
-        
-        // std::cout << "computed second_half_sum\n";
-        // output_area = (
-        //     one_eighth_sum + second_half_sum
-        // ) * (1 / 7.0);
-        // std::cout << "completed diffusion cycle " << i + 1 << '\n';
         output_area = output_area + ((
             c_north % nabla_north + c_south % nabla_south
             + c_east % nabla_east + c_west % nabla_west

@@ -4,6 +4,7 @@
 #include <blaze/math/dense/CustomMatrix.h>
 
 #include <boost/gil/image_view.hpp>
+#include <boost/gil/image.hpp>
 #include <boost/gil/typedefs.hpp>
 #include <limits>
 #include <type_traits>
@@ -43,5 +44,13 @@ template <typename U, typename SourceMatrix>
 auto remap_to(const SourceMatrix& source)
 {
     return remap_to<U>(source, blaze::min(source), blaze::max(source));
+}
+
+boost::gil::gray8_image_t to_gray8_image(const blaze::DynamicMatrix<std::uint8_t>& source)
+{
+    boost::gil::gray8_image_t result(source.columns(), source.rows());
+    auto matrix_view = to_matrix(boost::gil::view(result));
+    matrix_view = source;
+    return result;
 }
 }
