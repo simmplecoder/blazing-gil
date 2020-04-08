@@ -40,6 +40,26 @@ blaze::DynamicMatrix<std::int64_t> harris(const blaze::DynamicMatrix<std::int64_
     return det - ktrace_2;
 }
 
+struct hessian_result{
+    blaze::DynamicMatrix<std::int32_t> determinants;
+    blaze::DynamicMatrix<std::int32_t> traces;
+};
+
+hessian_result hessian(const blaze::DynamicMatrix<std::uint8_t>& input)
+{
+    blaze::DynamicMatrix<std::int32_t> extended = input;
+    auto dx = flash::convolve(extended, flash::sobel_x);
+    auto dy = flash::convolve(extended, flash::sobel_y);
+
+    auto ddxx = flash::convolve(dx, flash::sobel_x);
+    auto dxdy = flash::convolve(dx, flash::sobel_y);
+    auto ddyy = flash::convolve(dy, flash::sobel_y);
+    
+    auto det = ddxx % ddyy - dxdy % dxdy;
+    auto trace = ddxx + ddyy;
+    return {det, trace};
+}
+
 blaze::DynamicMatrix<double> anisotropic_diffusion(const blaze::DynamicMatrix<std::uint8_t>& input, double kappa, std::uint64_t iteration_count)
 {
     using matrix_type = blaze::DynamicMatrix<double>;

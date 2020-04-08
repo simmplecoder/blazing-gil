@@ -1,6 +1,7 @@
 foreach(example 
     sobel_gradient
     harris
+    hessian
     anisotropic_diffusion)
 
     add_executable(${example} ${example}.cpp)
