@@ -3,8 +3,9 @@
 #include <boost/gil/image.hpp>
 #include <boost/gil/image_view.hpp>
 #include <boost/gil/extension/io/png.hpp>
-#include <boost/gil/extension/io/jpeg.hpp>
 #include <boost/gil/typedefs.hpp>
+
+#include <CLI11.hpp>
 
 #include <iostream>
 #include <limits>
@@ -16,8 +17,21 @@ namespace gil = boost::gil;
 
 int main(int argc, char* argv[])
 {
+    CLI::App app{"Demonstration of Sobel operator usage - gradient calculation"};
+    std::string input_file;
+    std::string output_file;
+
+    app.add_option("-i,--input", input_file, "PNG input file with RGB layout (no alpha channel)")
+        ->required()
+        ->check(CLI::ExistingFile);
+
+    app.add_option("-o,--output", output_file, "PNG output file, will be 8 bit grayscale")
+        ->required();
+
+    CLI11_PARSE(app, argc, argv);
+
     gil::rgb8_image_t input;
-    gil::read_image(argv[1], input, gil::png_tag{});
+    gil::read_image(input_file, input, gil::png_tag{});
 
     gil::gray8_image_t gray(input.dimensions());
     gil::copy_and_convert_pixels(gil::view(input), gil::view(gray));
@@ -38,6 +52,6 @@ int main(int argc, char* argv[])
     std::cout << "Gradient range: " << blaze::max(gradient) << ' ' << blaze::min(gradient) << '\n'
               << "Final gray image range: " << static_cast<int>(blaze::max(image)) << ' ' << static_cast<int>(blaze::min(image)) << '\n';
     // gil::write_view(argv[2], gil::color_converted_view<gil::gray16_pixel_t>(gil::view(gray)), gil::png_tag{});
-    gil::write_view(argv[2], gil::view(gray), gil::jpeg_tag{});
+    gil::write_view(output_file, gil::view(gray), gil::png_tag{});
 }
 

@@ -5,5 +5,5 @@ foreach(example
     anisotropic_diffusion)
 
     add_executable(${example} ${example}.cpp)
-    target_link_libraries(${example} blazing-gil gil_dependencies)
+    target_link_libraries(${example} blazing-gil gil_dependencies cli11)
 endforeach()
