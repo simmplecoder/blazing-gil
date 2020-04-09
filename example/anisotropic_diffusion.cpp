@@ -5,6 +5,8 @@
 #include <boost/gil/extension/io/png.hpp>
 #include <boost/gil/typedefs.hpp>
 
+#include <CLI11.hpp>
+
 #include <iostream>
 #include <limits>
 
@@ -15,11 +17,21 @@ namespace gil = boost::gil;
 
 int main(int argc, char* argv[])
 {
-    gil::rgb8_image_t input;
-    gil::read_image(argv[1], input, gil::png_tag{});
+    CLI::App app{"Demonstration of anisotropic usage"};
+    std::string input_file;
+    std::string output_file;
+    double kappa;
+    std::int64_t iteration_count;
 
-    double kappa = std::stod(argv[3]);
-    std::int64_t iteration_count = std::stoll(argv[4]);
+    app.add_option("i,--input", input_file, "PNG input file with RGB colorspace");
+    app.add_option("o,--output", output_file, "PNG output file that will be grayscale");
+    app.add_option("k,--kappa", kappa, "Control how well edges are respected, smaller value = more respect");
+    app.add_option("it,--iteration", iteration_count, "How many diffusion iteration to do");
+
+    CLI11_PARSE(app, argc, argv);
+
+    gil::rgb8_image_t input;
+    gil::read_image(input_file, input, gil::png_tag{});
 
     gil::gray8_image_t gray(input.dimensions());
     gil::copy_and_convert_pixels(gil::view(input), gil::view(gray));
@@ -33,6 +45,5 @@ int main(int argc, char* argv[])
 
     std::cout << "Gradient range: " << blaze::max(diffused) << ' ' << blaze::min(diffused) << '\n'
               << "Final gray image range: " << static_cast<int>(blaze::max(image)) << ' ' << static_cast<int>(blaze::min(image)) << '\n';
-    // gil::write_view(argv[2], gil::color_converted_view<gil::gray16_pixel_t>(gil::view(gray)), gil::png_tag{});
-    gil::write_view(argv[2], gil::view(gray), gil::png_tag{});
+    gil::write_view(output_file, gil::view(gray), gil::png_tag{});
 }
