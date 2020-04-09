@@ -17,16 +17,19 @@ namespace gil = boost::gil;
 
 int main(int argc, char* argv[])
 {
-    CLI::App app{"Demonstration of anisotropic usage"};
+    CLI::App app{"Demonstration of anisotropic diffusion usage"};
     std::string input_file;
     std::string output_file;
-    double kappa;
-    std::int64_t iteration_count;
+    double kappa = 30;
+    std::int64_t iteration_count = 10;
 
-    app.add_option("i,--input", input_file, "PNG input file with RGB colorspace");
-    app.add_option("o,--output", output_file, "PNG output file that will be grayscale");
-    app.add_option("k,--kappa", kappa, "Control how well edges are respected, smaller value = more respect");
-    app.add_option("it,--iteration", iteration_count, "How many diffusion iteration to do");
+    app.add_option("i,--input", input_file, "PNG input file with RGB colorspace")
+        ->required()
+        ->check(CLI::ExistingFile);
+    app.add_option("o,--output", output_file, "PNG output file that will be grayscale")
+        ->required();
+    app.add_option("k,--kappa", kappa, "Control how well edges are respected, smaller value = more respect", true);
+    app.add_option("it,--iteration", iteration_count, "How many diffusion iteration to do", true);
 
     CLI11_PARSE(app, argc, argv);
 
