@@ -21,11 +21,11 @@ int main(int argc, char* argv[])
     std::string input_file;
     std::string output_file;
 
-    app.add_option("-i,--input", input_file, "PNG input file with RGB layout (no alpha channel)")
+    app.add_option("i,--input", input_file, "PNG input file with RGB layout (no alpha channel)")
         ->required()
         ->check(CLI::ExistingFile);
 
-    app.add_option("-o,--output", output_file, "PNG output file, will be 8 bit grayscale")
+    app.add_option("o,--output", output_file, "PNG output file, will be 8 bit grayscale")
         ->required();
 
     CLI11_PARSE(app, argc, argv);
