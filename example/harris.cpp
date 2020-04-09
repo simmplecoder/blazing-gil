@@ -5,6 +5,8 @@
 #include <boost/gil/extension/io/png.hpp>
 #include <boost/gil/typedefs.hpp>
 
+#include <CLI11.hpp>
+
 #include <iostream>
 #include <limits>
 
@@ -15,11 +17,28 @@ namespace gil = boost::gil;
 
 int main(int argc, char* argv[])
 {
-    gil::rgb8_image_t input;
-    gil::read_image(argv[1], input, gil::png_tag{});
+    std::string input_file;
+    std::string harris_response_file;
+    std::string output_file;
+    double k = 0.04;
+    std::int64_t threshold;
 
-    double k = std::stod(argv[4]);
-    std::int64_t threshold = std::stoll(argv[5]);
+    CLI::App app{"Demonstration of Harris affine region detector - finding corners"};
+    app.add_option("i,--input", input_file, "PNG file with RGB colorspace")
+        ->required()
+        ->check(CLI::ExistingFile);
+    app.add_option("hrf", harris_response_file, "Grayscale image that will contain Harris response as pixels")
+        ->required();
+    app.add_option("o,--output", output_file, "Output file that will contain green markers where Harris corner detector tested positive")
+        ->required();
+    app.add_option("t,--threshold", threshold, "Threshold value to test on during marking the input file with green pixels")
+        ->required();
+    app.add_option("k,--discriminant", k, "Discriminator to prefer corners to edges", true);
+
+    CLI11_PARSE(app, argc, argv);
+
+    gil::rgb8_image_t input;
+    gil::read_image(input_file, input, gil::png_tag{});
 
     gil::gray8_image_t gray(input.dimensions());
     gil::copy_and_convert_pixels(gil::view(input), gil::view(gray));
@@ -50,7 +69,6 @@ int main(int argc, char* argv[])
 
     std::cout << "Gradient range: " << blaze::max(harris) << ' ' << blaze::min(harris) << '\n'
               << "Final gray image range: " << static_cast<int>(blaze::max(image)) << ' ' << static_cast<int>(blaze::min(image)) << '\n';
-    // gil::write_view(argv[2], gil::color_converted_view<gil::gray16_pixel_t>(gil::view(gray)), gil::png_tag{});
-    gil::write_view(argv[2], gil::view(gray), gil::png_tag{});
-    gil::write_view(argv[3], gil::view(input), gil::png_tag{});
+    gil::write_view(harris_response_file, gil::view(gray), gil::png_tag{});
+    gil::write_view(output_file, gil::view(input), gil::png_tag{});
 }
