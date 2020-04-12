@@ -42,7 +42,6 @@ int main(int argc, char* argv[])
     auto image = flash::to_matrix(gil::view(gray));
     blaze::DynamicMatrix<std::int16_t> mat(image);
     auto diffused = flash::anisotropic_diffusion(mat, kappa, iteration_count);
-    std::cout << "diffused\n";
 
     image = flash::remap_to<unsigned char>(diffused);
 

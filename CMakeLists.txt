@@ -5,15 +5,19 @@ set(CMAKE_CXX_STANDARD 17)
 
 option(BOOST_INCLUDE_DIR "set this to your boost root folder" "")
 
-if (${BOOST_INCLUDE_DIR} EQUAL "")
-  message(FATAL_ERROR "please set boost include dir")
-endif()
-
-
 ### setup dependencies for blazing-gil
 
+### Intel-MKL
+if (NOT DEFINED ENV{MKLROOT})
+  message(FATAL_ERROR "please set mkl root")
+endif()
+
+find_package(BLAS REQUIRED)
+
+### blaze
 find_package(blaze REQUIRED)
 
+### GIL dependencies - jpeg, png, tiff, tiffxx, boost
 add_library(gil_dependencies INTERFACE)
 
 find_package(JPEG REQUIRED)
@@ -51,10 +55,10 @@ target_link_libraries(gil_dependencies
     PNG::PNG
     TIFF::TIFF)
 
-### create the library target
+### create the library target - blazing-gil
 add_library(blazing-gil INTERFACE)
-target_include_directories(blazing-gil INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(blazing-gil INTERFACE gil_dependencies)
+target_include_directories(blazing-gil INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include $ENV{MKLROOT}/include)
+target_link_libraries(blazing-gil INTERFACE gil_dependencies ${BLAS_LIBRARIES})
 
 
 ### dependencies for examples

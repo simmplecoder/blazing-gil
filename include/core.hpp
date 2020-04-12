@@ -1,13 +1,6 @@
 #pragma once
 
-#include <blaze/math/AlignmentFlag.h>
-#include <blaze/math/PaddingFlag.h>
-#include <blaze/math/CustomMatrix.h>
-#include <blaze/math/dense/CustomMatrix.h>
-#include <blaze/math/dense/DynamicMatrix.h>
-
-#include <blaze/math/views/Forward.h>
-#include <blaze/math/views/Submatrix.h>
+#include <blaze/Blaze.h>
 #include <boost/gil/image_view.hpp>
 #include <boost/gil/image.hpp>
 #include <boost/gil/typedefs.hpp>

@@ -5,7 +5,8 @@ foreach(example
     anisotropic_diffusion
     nearest_neighbor_scaling
     padding
-    bilinear_interpolation_scaling)
+    bilinear_interpolation_scaling
+    test_blaze)
     add_executable(${example} ${example}.cpp)
-    target_link_libraries(${example} blazing-gil gil_dependencies cli11)
+    target_link_libraries(${example} blazing-gil gil_dependencies cli11 blaze::blaze)
 endforeach()
