@@ -1,4 +1,4 @@
-#include <blaze/util/algorithms/Max.h>
+#include <blaze/Blaze.h>
 #include <boost/gil/algorithm.hpp>
 #include <boost/gil/image.hpp>
 #include <boost/gil/image_view.hpp>
