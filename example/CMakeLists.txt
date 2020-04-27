@@ -7,5 +7,5 @@ foreach(example
     padding
     bilinear_interpolation_scaling)
     add_executable(${example} ${example}.cpp)
-    target_link_libraries(${example} blazing-gil gil_dependencies cli11 blaze::blaze)
+    target_link_libraries(${example} blazing-gil cli11)
 endforeach()

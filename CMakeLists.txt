@@ -3,7 +3,10 @@ project(blazing-gil)
 
 set(CMAKE_CXX_STANDARD 17)
 
-option(BOOST_INCLUDE_DIR "set this to your boost root folder" "")
+find_package(Boost 1.72 
+  COMPONENTS
+    filesystem
+  REQUIRED)
 
 ### setup dependencies for blazing-gil
 
@@ -13,19 +16,19 @@ if (NOT DEFINED ENV{MKLROOT})
 endif()
 
 find_package(BLAS REQUIRED)
+add_library(mkl_blas INTERFACE)
+target_link_libraries(mkl_blas INTERFACE ${BLAS_LIBRARIES})
+target_include_directories(mkl_blas INTERFACE $ENV{MKLROOT}/include)
 
 ### blaze
 find_package(blaze REQUIRED)
 
-### GIL dependencies - jpeg, png, tiff, tiffxx, boost
-add_library(gil_dependencies INTERFACE)
+### GIL dependencies - jpeg, png, tiff, tiffxx, Boost::filesystem, Boost::headers (headers)
+add_library(GIL INTERFACE)
 
 find_package(JPEG REQUIRED)
 find_package(PNG REQUIRED)
 find_package(TIFF REQUIRED)
-
-target_link_libraries(gil_dependencies INTERFACE ${JPEG_LIBRARIES} PNG::PNG TIFF::TIFF)
-target_include_directories(gil_dependencies INTERFACE ${JPEG_INCLUDE_DIR})
 
 if (TIFF_LIBRARY)
   set(TIFFXX_NAMES tiffxx)
@@ -40,25 +43,27 @@ if (TIFF_LIBRARY)
   mark_as_advanced(TIFFXX_LIBRARY_RELEASE TIFFXX_LIBRARY_DEBUG)
   include(FindPackageHandleStandardArgs)
   find_package_handle_standard_args(TIFFXX REQUIRED_VARS TIFFXX_LIBRARY TIFFXX_INCLUDE_DIR)
-  target_include_directories(gil_dependencies INTERFACE ${TIFFXX_INCLUDE_DIR})
-  target_link_libraries(gil_dependencies INTERFACE ${TIFFXX_LIBRARY})
+  target_include_directories(GIL INTERFACE ${TIFFXX_INCLUDE_DIR})
+  target_link_libraries(GIL INTERFACE ${TIFFXX_LIBRARY})
 endif()
 
-target_include_directories(gil_dependencies
+target_include_directories(GIL
   INTERFACE
     ${JPEG_INCLUDE_DIR}
     ${BOOST_INCLUDE_DIR})
 
-target_link_libraries(gil_dependencies
+target_link_libraries(GIL
   INTERFACE
     ${JPEG_LIBRARIES}
     PNG::PNG
-    TIFF::TIFF)
+    TIFF::TIFF
+    Boost::headers
+    Boost::filesystem)
 
 ### create the library target - blazing-gil
 add_library(blazing-gil INTERFACE)
-target_include_directories(blazing-gil INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include $ENV{MKLROOT}/include)
-target_link_libraries(blazing-gil INTERFACE gil_dependencies ${BLAS_LIBRARIES})
+target_include_directories(blazing-gil INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(blazing-gil INTERFACE GIL mkl_blas)
 
 
 ### dependencies for examples
