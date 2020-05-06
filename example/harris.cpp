@@ -55,7 +55,6 @@ int main(int argc, char* argv[])
     });
 
     image = flash::remap_to<unsigned char>(harris);
-    const auto max_value = blaze::max(harris);
     for (std::size_t i = 0; i < image.rows(); ++i)
     {
         for (std::size_t j = 0; j < image.columns(); ++j)

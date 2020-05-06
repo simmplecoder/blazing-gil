@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 option(USE_CONAN "Use Conan to install dependencies" OFF)
 
-find_package(Boost 1.72 
+find_package(Boost
   COMPONENTS
     filesystem
   REQUIRED)
@@ -27,9 +27,6 @@ find_package(blaze REQUIRED)
 
 ### GIL dependencies - jpeg, png, tiff, tiffxx, Boost::filesystem, Boost::headers (headers)
 add_library(GIL INTERFACE)
-
-if(USE_CONAN)
-endif()
 
 if (USE_CONAN)
   # Download automatically, you can also just copy the conan.cmake file
