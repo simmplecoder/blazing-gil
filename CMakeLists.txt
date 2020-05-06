@@ -4,7 +4,9 @@ project(blazing-gil)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 
-option(USE_CONAN "Use Conan to install dependencies" OFF)
+option(use_conan "Use Conan to install dependencies")
+# option(blas_lib_name "BLAS library to use as backend for Blaze. Only Intel MKL is supported for now. The specified library must be the one Blaze is configured for" "MKL")
+set(blas_lib_name "MKL" CACHE PATH "BLAS library to use as backend for Blaze. Only Intel MKL is supported for now. The specified library must be the one Blaze is configured for.")
 
 find_package(Boost
   COMPONENTS
@@ -13,15 +15,22 @@ find_package(Boost
 
 ### setup dependencies for blazing-gil
 
-### Intel-MKL
-if (NOT DEFINED ENV{MKLROOT})
-  message(FATAL_ERROR "please set mkl root")
-endif()
+add_library(blas_library INTERFACE)
 
-find_package(BLAS REQUIRED)
-add_library(mkl_blas INTERFACE)
-target_link_libraries(mkl_blas INTERFACE ${BLAS_LIBRARIES})
-target_include_directories(mkl_blas INTERFACE $ENV{MKLROOT}/include)
+message(STATUS "Selected BLAS library: ${blas_lib_name}")
+
+if (blas_lib_name STREQUAL "MKL")
+    if (DEFINED MKLROOT)
+        set(ENV{MKLROOT} ${MKLROOT})
+    elseif(NOT DEFINED ENV{MKLROOT})
+        message(FATAL_ERROR "Please either pass MKLROOT variable or set environment variable MKLROOT")
+    endif()
+    find_package(BLAS REQUIRED)
+    target_link_libraries(blas_library INTERFACE ${BLAS_LIBRARIES})
+    target_include_directories(blas_library INTERFACE $ENV{MKLROOT}/include)
+else()
+    message(FATAL_ERROR "Please select one of the supported BLAS libraries (only MKL is supported for now)")
+endif()
 
 ### blaze
 find_package(blaze REQUIRED)
@@ -91,7 +100,7 @@ endif()
 ### create the library target - blazing-gil
 add_library(blazing-gil INTERFACE)
 target_include_directories(blazing-gil INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(blazing-gil INTERFACE GIL mkl_blas)
+target_link_libraries(blazing-gil INTERFACE GIL blas_library)
 
 
 ### dependencies for examples
