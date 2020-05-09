@@ -6,7 +6,8 @@ foreach(example
     nearest_neighbor_scaling
     padding
     bilinear_interpolation_scaling
-    lanczos_scaling)
+    lanczos_scaling
+    matrix_channeled)
     add_executable(${example} ${example}.cpp)
     target_link_libraries(${example} blazing-gil cli11)
     target_compile_options(${example} PRIVATE

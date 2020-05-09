@@ -1,16 +1,21 @@
 #pragma once
 
 #include <blaze/Blaze.h>
+#include <boost/gil/algorithm.hpp>
 #include <boost/gil/image.hpp>
 #include <boost/gil/image_view.hpp>
+#include <boost/gil/pixel.hpp>
 #include <boost/gil/typedefs.hpp>
 #include <iostream>
 #include <limits>
 #include <type_traits>
+#include <utility>
+
+#include <iostream>
 
 namespace flash
 {
-    
+
 using signed_size = std::ptrdiff_t;
 inline constexpr double pi = 3.14159265358979323846;
 
@@ -19,6 +24,35 @@ using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 
 template <typename T>
 using image_matrix = blaze::CustomMatrix<T, blaze::unaligned, blaze::unpadded>;
+
+namespace detail
+{
+template <typename PixelType, std::size_t... indices>
+auto pixel_to_vector_impl(const PixelType& pixel,
+                          std::integer_sequence<std::size_t, indices...>)
+{
+    using ChannelType = typename boost::gil::channel_type<PixelType>::type;
+    return blaze::StaticVector<ChannelType, sizeof...(indices)>{
+        pixel[indices]...};
+}
+} // namespace detail
+
+template <typename PixelType>
+auto pixel_to_vector(const PixelType& pixel)
+{
+    return detail::pixel_to_vector_impl(
+        pixel,
+        std::make_index_sequence<boost::gil::num_channels<PixelType>{}>{});
+}
+
+template <typename View>
+auto to_matrix_channeled(View view)
+{
+    return blaze::evaluate(blaze::generate(
+        view.height(), view.width(), [&view](std::size_t i, std::size_t j) {
+            return pixel_to_vector(view(j, i));
+        }));
+}
 
 template <typename GrayView>
 auto to_matrix(GrayView source)
@@ -68,6 +102,34 @@ to_gray8_image(const blaze::DynamicMatrix<std::uint8_t>& source)
     auto matrix_view = to_matrix(boost::gil::view(result));
     matrix_view = source;
     return result;
+}
+
+template <typename PixelType, typename VT, bool TransposeFlag>
+auto vector_to_pixel(const blaze::DenseVector<VT, TransposeFlag>& vector)
+{
+    auto num_channels = boost::gil::num_channels<PixelType>{};
+    PixelType pixel{};
+    for (std::size_t i = 0; i < num_channels; ++i) {
+        pixel[i] = (~vector)[i];
+    }
+
+    return pixel;
+}
+
+template <typename ImageType,
+          typename PixelType = typename ImageType::value_type, typename MT>
+ImageType to_image(const blaze::DenseMatrix<MT, blaze::rowMajor>& data)
+{
+    ImageType image((~data).rows(), (~data).columns());
+    auto view = boost::gil::view(image);
+
+    for (signed_size i = 0; i < view.height(); ++i) {
+        for (signed_size j = 0; j < view.width(); ++j) {
+            view(j, i) = vector_to_pixel<PixelType>((~data)(i, j));
+        }
+    }
+
+    return image;
 }
 
 template <typename T, typename U>
