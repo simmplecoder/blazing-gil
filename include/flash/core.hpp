@@ -10,6 +10,9 @@
 
 namespace flash
 {
+    
+using signed_size = std::ptrdiff_t;
+inline constexpr double pi = 3.14159265358979323846;
 
 template <typename T>
 using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;

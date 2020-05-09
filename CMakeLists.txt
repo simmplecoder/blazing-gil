@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 project(blazing-gil)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 
 option(USE_CONAN "Use Conan to install dependencies" OFF)
