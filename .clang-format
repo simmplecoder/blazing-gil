@@ -7,3 +7,4 @@ BreakBeforeBraces: Linux
 AlwaysBreakTemplateDeclarations: Yes
 Standard: Latest
 UseTab: Never
+ColumnLimit: 100
