@@ -16,8 +16,6 @@
 #include <type_traits>
 #include <utility>
 
-#include <iostream>
-
 namespace std
 {
 template <typename U, std::size_t N>
@@ -164,7 +162,6 @@ auto remap_to_channeled(const blaze::DenseMatrix<MT, SO>& source,
     result_vector_type dst_max_elems;
     std::fill(dst_max_elems.begin(), dst_max_elems.end(), dst_max);
 
-    // use proxy range to
     proxy_vector src_range_length = src_max_elems - src_min_elems + 1;
     proxy_vector dst_range_length = dst_max_elems - dst_min_elems + 1;
 
@@ -174,7 +171,7 @@ auto remap_to_channeled(const blaze::DenseMatrix<MT, SO>& source,
             const source_vector_type& elem) {
             result_vector_type result{};
             for (std::size_t i = 0; i < vector_size; ++i) {
-                result[i] = dst_min_elems[i] + // substract 1 because ranges usually start from 0
+                result[i] = dst_min_elems[i] +
                             (static_cast<double>(elem[i] -
                                                  src_min_elems[i]) / // cast to double to make more
                                                                      // resistant to accuracy loss
