@@ -13,7 +13,8 @@ TEST_CASE("gray8 image to matrix conversion typecheck", "[to_matrix_channeled]")
 {
     gil::gray8_image_t input(16, 16, gil::gray8_pixel_t(13));
     auto matrix = flash::to_matrix_channeled(gil::view(input));
-    STATIC_REQUIRE(std::is_same_v<blaze::StaticVector<std::uint8_t, 1>, blaze::UnderlyingElement_t<decltype(matrix)>>);
+    STATIC_REQUIRE(std::is_same_v<blaze::StaticVector<std::uint8_t, 1>,
+                                  blaze::UnderlyingElement_t<decltype(matrix)>>);
 }
 
 TEST_CASE("gray8 image to matrix values check", "[to_matrix_channeled]")
@@ -49,7 +50,8 @@ TEST_CASE("rgb8 image to matrix typecheck", "[to_matrix_channeled]")
     blaze::DynamicMatrix<blaze::StaticVector<std::uint8_t, 3>> expected(16, 16, default_vector);
 
     auto result = flash::to_matrix_channeled(gil::view(input));
-    STATIC_REQUIRE(std::is_same_v<blaze::StaticVector<std::uint8_t, 3>, blaze::UnderlyingElement_t<decltype(result)>>);
+    STATIC_REQUIRE(std::is_same_v<blaze::StaticVector<std::uint8_t, 3>,
+                                  blaze::UnderlyingElement_t<decltype(result)>>);
 }
 
 TEST_CASE("rgb8 image to matrix value check", "[to_matrix_channeled]")
