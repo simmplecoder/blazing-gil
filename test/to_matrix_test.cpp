@@ -9,14 +9,14 @@
 
 namespace gil = boost::gil;
 
-TEST_CASE("gray8 image to matrix conversion typecheck")
+TEST_CASE("gray8 image to matrix conversion typecheck", "[to_matrix_channeled]")
 {
     gil::gray8_image_t input(16, 16, gil::gray8_pixel_t(13));
     auto matrix = flash::to_matrix_channeled(gil::view(input));
     STATIC_REQUIRE(std::is_same_v<blaze::StaticVector<std::uint8_t, 1>, blaze::UnderlyingElement_t<decltype(matrix)>>);
 }
 
-TEST_CASE("gray8 image to matrix values check")
+TEST_CASE("gray8 image to matrix values check", "[to_matrix_channeled]")
 {
     gil::gray8_image_t input(16, 16, gil::gray8_pixel_t(13));
     auto matrix = flash::to_matrix_channeled(gil::view(input));
@@ -25,7 +25,7 @@ TEST_CASE("gray8 image to matrix values check")
     REQUIRE(matrix == expected);
 }
 
-TEST_CASE("gray8 image with differing values to matrix value check")
+TEST_CASE("gray8 image with differing values to matrix value check", "[to_matrix_channeled]")
 {
     gil::gray8_image_t input(16, 16, gil::gray8_pixel_t(13));
     auto view = gil::view(input);
@@ -40,7 +40,7 @@ TEST_CASE("gray8 image with differing values to matrix value check")
     REQUIRE(matrix == expected);
 }
 
-TEST_CASE("rgb8 image to matrix typecheck")
+TEST_CASE("rgb8 image to matrix typecheck", "[to_matrix_channeled]")
 {
     gil::rgb8_pixel_t default_pixel(1, 2, 3);
     gil::rgb8_image_t input(16, 16, default_pixel);
@@ -52,7 +52,7 @@ TEST_CASE("rgb8 image to matrix typecheck")
     STATIC_REQUIRE(std::is_same_v<blaze::StaticVector<std::uint8_t, 3>, blaze::UnderlyingElement_t<decltype(result)>>);
 }
 
-TEST_CASE("rgb8 image to matrix value check")
+TEST_CASE("rgb8 image to matrix value check", "[to_matrix_channeled]")
 {
     gil::rgb8_pixel_t default_pixel(1, 2, 3);
     gil::rgb8_image_t input(16, 16, default_pixel);
@@ -64,7 +64,7 @@ TEST_CASE("rgb8 image to matrix value check")
     REQUIRE(result == expected);
 }
 
-TEST_CASE("rgb8 image with differing values to matrix value check")
+TEST_CASE("rgb8 image with differing values to matrix value check", "[to_matrix_channeled]")
 {
     gil::rgb8_pixel_t default_pixel(1, 2, 3);
     gil::rgb8_image_t input(16, 16, default_pixel);

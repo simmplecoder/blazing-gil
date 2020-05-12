@@ -6,7 +6,7 @@
 
 #include <flash/core.hpp>
 
-TEST_CASE("test remap_to_channeled - simple case")
+TEST_CASE("test remap_to_channeled - simple case", "[to_matrix_channeled]")
 {
     blaze::StaticVector<int, 3> default_vector({0, 1, 2});
     blaze::DynamicMatrix<blaze::StaticVector<int, 3>> matrix(2, 3, default_vector);
@@ -16,7 +16,7 @@ TEST_CASE("test remap_to_channeled - simple case")
     REQUIRE(expected == result);
 }
 
-TEST_CASE("test remap_to_channeled - slightly harder case")
+TEST_CASE("test remap_to_channeled - slightly harder case", "[to_matrix_channeled]")
 {
     blaze::StaticVector<int, 3> default_vector({0, 1, 2});
     blaze::DynamicMatrix<blaze::StaticVector<int, 3>> matrix(2, 3, default_vector);
@@ -26,7 +26,7 @@ TEST_CASE("test remap_to_channeled - slightly harder case")
     REQUIRE(expected == result);
 }
 
-TEST_CASE("test remap_to_channeled - linear case")
+TEST_CASE("test remap_to_channeled - linear case", "[to_matrix_channeled]")
 {
     // input range is from 0 to 15, so the length of the range is 16
     // the output range is from 0 to 255, so the length is 256
@@ -34,7 +34,6 @@ TEST_CASE("test remap_to_channeled - linear case")
 
     blaze::DynamicMatrix<blaze::StaticVector<int, 3>> matrix(2, 8, {0, 0, 0});
     int multiplier = 16;
-    int counter = 0;
     blaze::DynamicMatrix<blaze::StaticVector<std::uint8_t, 3>> expected(2, 8, {0, 0, 0});
 
     for (unsigned int counter = 0; counter < 16; ++counter) {
