@@ -15,6 +15,9 @@ Blaze (3.7+, preferably 3.8)
 BLAS library (only Intel MKL is supported for now, but the rest will be added later)
 ```
 
-The easiest way to consume the library is to pass `-DBOOST_ROOT=<Boost root>` and `-DMKLROOT=<intel root>/mkl` along with `-DUSE_CONAN`. That will install all of the image libraries for GIL. If `USE_CONAN` is not specified, those libraries have to be findable by `find_package` of CMake.
+The easiest way to consume the library is to pass `-DBOOST_ROOT=<Boost root>` and `-DMKLROOT=<intel root>/mkl` along with `-DUSE_CONAN=1`. That will install all of the image libraries for GIL. If `USE_CONAN` is not specified, those libraries have to be findable by `find_package` of CMake.
 
 
+## Testing
+
+Tests are written using Catch2 library. It has to be findable by `find_package` to run tests.
