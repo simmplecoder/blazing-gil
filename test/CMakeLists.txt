@@ -5,8 +5,7 @@ else()
 endif()
 
 include(Catch)
-foreach(target remap_test)
-    add_executable(${target} ${target}.cpp)
-    target_link_libraries(${target} Catch2::Catch2 blazing-gil)
-    catch_discover_tests(${target})
-endforeach()
+
+add_executable(test_target remap_test.cpp to_matrix_test.cpp)
+target_link_libraries(test_target PRIVATE Catch2::Catch2 blazing-gil)
+catch_discover_tests(test_target)
