@@ -1,0 +1,12 @@
+if (USE_CONAN)
+    add_library(Catch2::Catch2 ALIAS CONAN_PKG::Catch2)
+else()
+    find_package(Catch2 REQUIRED)
+endif()
+
+include(Catch)
+foreach(target remap_test)
+    add_executable(${target} ${target}.cpp)
+    target_link_libraries(${target} Catch2::Catch2 blazing-gil)
+    catch_discover_tests(${target})
+endforeach()

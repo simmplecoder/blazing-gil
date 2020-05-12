@@ -180,8 +180,6 @@ auto remap_to_channeled(const blaze::DenseMatrix<MT, SO>& source,
                                                                      // resistant to accuracy loss
                              src_range_length[i] *
                              dst_range_length[i]);
-                std::cout << static_cast<int>(result[i]) << ' ' << elem[i] << ' '
-                          << src_range_length[i] << ' ' << dst_range_length[i] << '\n';
             }
 
             return result;

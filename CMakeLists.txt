@@ -8,11 +8,6 @@ option(use_conan "Use Conan to install dependencies")
 # option(blas_lib_name "BLAS library to use as backend for Blaze. Only Intel MKL is supported for now. The specified library must be the one Blaze is configured for" "MKL")
 set(blas_lib_name "MKL" CACHE PATH "BLAS library to use as backend for Blaze. Only Intel MKL is supported for now. The specified library must be the one Blaze is configured for.")
 
-find_package(Boost
-  COMPONENTS
-    filesystem
-  REQUIRED)
-
 ### setup dependencies for blazing-gil
 
 add_library(blas_library INTERFACE)
@@ -66,6 +61,10 @@ if (USE_CONAN)
       Boost::headers
       Boost::filesystem)
 else()
+  find_package(Boost
+    COMPONENTS
+      filesystem
+    REQUIRED)
   find_package(JPEG REQUIRED)
   find_package(PNG REQUIRED)
   find_package(TIFF REQUIRED)
@@ -107,3 +106,11 @@ target_link_libraries(blazing-gil INTERFACE GIL blas_library)
 add_library(cli11 INTERFACE)
 target_include_directories(cli11 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/cli11)
 add_subdirectory(example)
+
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    include(CTest)
+endif()
+
+if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTING)
+  add_subdirectory(test)
+endif()
