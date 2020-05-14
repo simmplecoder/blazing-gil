@@ -4,7 +4,6 @@
 #include <catch2/catch.hpp>
 #include <cstdint>
 #include <flash/core.hpp>
-#include <libs/gil/include/boost/gil/typedefs.hpp>
 #include <type_traits>
 
 namespace gil = boost::gil;
