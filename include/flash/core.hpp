@@ -86,13 +86,14 @@ auto to_matrix_channeled(View view)
         }));
 }
 
-template <typename GrayView>
-auto to_matrix(GrayView source)
+template <typename SingleChannelView, blaze::AlignmentFlag IsAligned = blaze::unaligned,
+          blaze::PaddingFlag IsPadded = blaze::unpadded, bool StorageOrder = blaze::rowMajor>
+auto as_matrix(SingleChannelView source)
 {
-    using value_type = remove_cvref_t<decltype(
-        std::declval<typename GrayView::value_type>().at(std::integral_constant<int, 0>{}))>;
-    return image_matrix<value_type>(
-        reinterpret_cast<value_type*>(&source(0, 0)), source.height(), source.width());
+    using pixel_t = typename SingleChannelView::value_type;
+    using channel_t = typename boost::gil::channel_type<SingleChannelView>::type;
+    return blaze::CustomMatrix<channel_t, IsAligned, IsPadded, StorageOrder>(
+        reinterpret_cast<channel_t*>(&source(0, 0)), source.height(), source.width());
 }
 
 // perform linear mapping from source range to destination range
@@ -195,7 +196,7 @@ auto remap_to_channeled(const blaze::DenseMatrix<MT, SO>& source,
 inline boost::gil::gray8_image_t to_gray8_image(const blaze::DynamicMatrix<std::uint8_t>& source)
 {
     boost::gil::gray8_image_t result(source.columns(), source.rows());
-    auto matrix_view = to_matrix(boost::gil::view(result));
+    auto matrix_view = as_matrix(boost::gil::view(result));
     matrix_view = source;
     return result;
 }
