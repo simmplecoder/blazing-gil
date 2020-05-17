@@ -39,7 +39,7 @@ TEST_CASE("3d vector to pixel typecheck", "[vector_to_pixel]")
 TEST_CASE("3d zero vector to pixel value check", "[vector_to_pixel]")
 {
     blaze::StaticVector<std::uint8_t, 3> v({0, 0, 0});
-    auto p = flash::vector_to_pixel<gil::gray8_pixel_t>(v);
+    auto p = flash::vector_to_pixel<gil::rgb8_pixel_t>(v);
 
     REQUIRE(p[0] == 0);
     REQUIRE(p[1] == 0);
