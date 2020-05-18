@@ -44,6 +44,10 @@ struct common_type<blaze::StaticVector<T, N>, blaze::StaticVector<U, N>> {
 
 } // namespace std
 
+/** \brief the library namespace - flash
+
+    Contains all functions and classes in the library
+*/
 namespace flash
 {
 
@@ -117,7 +121,12 @@ auto remap_to(const SourceMatrix& source)
     return remap_to<U>(source, blaze::min(source), blaze::max(source));
 }
 
-// remap larger range into smaller one
+/** \brief Remap channeled matrix into another range
+
+    The class takes minimum and maximum along each channel and remaps it into new range. Do note
+    that if a wider type is specified, `dst_min` and `dst_max` vectors has to be manually specified
+    and different than type min/max. Otherwise, overflow is guaranteed.
+*/
 template <typename U, typename MT, bool SO>
 auto remap_to_channeled(const blaze::DenseMatrix<MT, SO>& source,
                         U dst_min = std::numeric_limits<U>::min(),
