@@ -90,7 +90,6 @@ template <typename SingleChannelView, blaze::AlignmentFlag IsAligned = blaze::un
           blaze::PaddingFlag IsPadded = blaze::unpadded, bool StorageOrder = blaze::rowMajor>
 auto as_matrix(SingleChannelView source)
 {
-    using pixel_t = typename SingleChannelView::value_type;
     using channel_t = typename boost::gil::channel_type<SingleChannelView>::type;
     return blaze::CustomMatrix<channel_t, IsAligned, IsPadded, StorageOrder>(
         reinterpret_cast<channel_t*>(&source(0, 0)), source.height(), source.width());
