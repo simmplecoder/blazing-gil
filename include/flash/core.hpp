@@ -86,6 +86,18 @@ auto to_matrix_channeled(View view)
         }));
 }
 
+/** \brief constructs `blaze::CustomMatrix` out of `image_view`
+
+    Creates a matrix which is semantically like pointer, e.g. changes in the matrix
+    will be reflected inside the view, and vice versa. Do note that assigning to another
+    `blaze::CustomMatrix` will behave like shallow copy, thus it is important to perform
+    deep copy using e.g. `blaze::DynamicMatrix` to have independent copy.
+
+    The input view must have single channel pixels like `boost::gil::gray8_view_t`,
+    for multi-channel matrices please first check layout compatibility of the pixel type
+    and corresponding `blaze::StaticVector<ChannelType, num_channels>`, then use
+    `as_matrix_channeled`.
+*/
 template <typename SingleChannelView, blaze::AlignmentFlag IsAligned = blaze::unaligned,
           blaze::PaddingFlag IsPadded = blaze::unpadded, bool StorageOrder = blaze::rowMajor>
 auto as_matrix(SingleChannelView source)
