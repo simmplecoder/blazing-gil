@@ -86,13 +86,25 @@ auto to_matrix_channeled(View view)
         }));
 }
 
-template <typename GrayView>
-auto to_matrix(GrayView source)
+/** \brief constructs `blaze::CustomMatrix` out of `image_view`
+
+    Creates a matrix which is semantically like pointer, e.g. changes in the matrix
+    will be reflected inside the view, and vice versa. Do note that assigning to another
+    `blaze::CustomMatrix` will behave like shallow copy, thus it is important to perform
+    deep copy using e.g. `blaze::DynamicMatrix` to have independent copy.
+
+    The input view must have single channel pixels like `boost::gil::gray8_view_t`,
+    for multi-channel matrices please first check layout compatibility of the pixel type
+    and corresponding `blaze::StaticVector<ChannelType, num_channels>`, then use
+    `as_matrix_channeled`.
+*/
+template <typename SingleChannelView, blaze::AlignmentFlag IsAligned = blaze::unaligned,
+          blaze::PaddingFlag IsPadded = blaze::unpadded, bool StorageOrder = blaze::rowMajor>
+auto as_matrix(SingleChannelView source)
 {
-    using value_type = remove_cvref_t<decltype(
-        std::declval<typename GrayView::value_type>().at(std::integral_constant<int, 0>{}))>;
-    return image_matrix<value_type>(
-        reinterpret_cast<value_type*>(&source(0, 0)), source.height(), source.width());
+    using channel_t = typename boost::gil::channel_type<SingleChannelView>::type;
+    return blaze::CustomMatrix<channel_t, IsAligned, IsPadded, StorageOrder>(
+        reinterpret_cast<channel_t*>(&source(0, 0)), source.height(), source.width());
 }
 
 // perform linear mapping from source range to destination range
@@ -195,7 +207,7 @@ auto remap_to_channeled(const blaze::DenseMatrix<MT, SO>& source,
 inline boost::gil::gray8_image_t to_gray8_image(const blaze::DynamicMatrix<std::uint8_t>& source)
 {
     boost::gil::gray8_image_t result(source.columns(), source.rows());
-    auto matrix_view = to_matrix(boost::gil::view(result));
+    auto matrix_view = as_matrix(boost::gil::view(result));
     matrix_view = source;
     return result;
 }
