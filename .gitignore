@@ -4,3 +4,6 @@ compile_commands.json
 .vscode/
 settings.json
 doc/docs_output
+.idea/
+cmake-build-debug/
+cmake-build-release/

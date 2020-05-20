@@ -2,6 +2,10 @@
 
 #include <algorithm>
 #include <blaze/Blaze.h>
+#include <blaze/math/AlignmentFlag.h>
+#include <blaze/math/PaddingFlag.h>
+#include <blaze/math/StorageOrder.h>
+#include <blaze/math/dense/StaticVector.h>
 #include <blaze/math/expressions/Forward.h>
 #include <blaze/math/typetraits/IsDenseVector.h>
 #include <blaze/math/typetraits/IsStatic.h>
@@ -60,13 +64,39 @@ using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 template <typename T>
 using image_matrix = blaze::CustomMatrix<T, blaze::unaligned, blaze::unpadded>;
 
+/** \brief Used to bypass scoped_channel_type of GIL
+
+    Some channel types in GIL, like `gil::float32_t` and `gil::float64_t` have a different type
+    compared to it's underlying float type (because they constrain the range to be [0...1]),
+    this struct will strip that and provide typedef equal to the underlying channel type.
+*/
+template <typename ChannelType>
+struct true_channel_type {
+    using type = ChannelType;
+};
+
+template <>
+struct true_channel_type<boost::gil::float32_t>
+{
+    using type = float;
+};
+
+template <>
+struct true_channel_type<boost::gil::float64_t>
+{
+    using type = double;
+};
+
+template <typename ChannelType>
+using true_channel_type_t = typename true_channel_type<ChannelType>::type;
+
 namespace detail
 {
 template <typename PixelType, std::size_t... indices>
 auto pixel_to_vector_impl(const PixelType& pixel, std::integer_sequence<std::size_t, indices...>)
 {
-    using ChannelType = typename boost::gil::channel_type<PixelType>::type;
-    return blaze::StaticVector<ChannelType, sizeof...(indices)>{pixel[indices]...};
+    using channel_t = typename boost::gil::channel_type<PixelType>::type;
+    return blaze::StaticVector<true_channel_type_t<channel_t>, sizeof...(indices)>{pixel[indices]...};
 }
 } // namespace detail
 
@@ -104,7 +134,35 @@ auto as_matrix(SingleChannelView source)
 {
     using channel_t = typename boost::gil::channel_type<SingleChannelView>::type;
     return blaze::CustomMatrix<channel_t, IsAligned, IsPadded, StorageOrder>(
-        reinterpret_cast<channel_t*>(&source(0, 0)), source.height(), source.width());
+        reinterpret_cast<true_channel_type_t<channel_t>*>(&source(0, 0)), source.height(), source.width());
+}
+
+/** \brief constructs `blaze::CustomMatrix` out of `image_view` whose elements are
+    `StaticVector<ChannelType, num_channels>`
+
+    Please note that there are layout incompatibilities between Blaze's `StaticVector` and
+    GIL's pixel types. GIL's pixel types are padded to 4 byte boundary if the size is less than
+    8 bytes, while Blaze pads to 16. There is a `static_assert` that prevents obviously wrong
+    use cases, but it is advised to first check if the pixel type and resulting `StaticVector`
+    are compatible, then using the function. For already tested types, please run tests for
+    this function (tagged with the function name).
+*/
+template <typename ImageView, blaze::AlignmentFlag IsPixelAligned = blaze::unaligned,
+          blaze::PaddingFlag IsPixelPadded = blaze::unpadded,
+          blaze::AlignmentFlag IsAligned = blaze::unaligned,
+          blaze::PaddingFlag IsPadded = blaze::unpadded, bool StorageOrder = blaze::rowMajor>
+auto as_matrix_channeled(ImageView source)
+{
+    // using pixel_t = typename ImageView::value_type;
+    using channel_t = typename boost::gil::channel_type<ImageView>::type;
+    constexpr auto num_channels = boost::gil::num_channels<ImageView>{};
+    using element_type = blaze::
+        StaticVector<true_channel_type_t<channel_t>, num_channels, blaze::rowMajor, IsPixelAligned, IsPixelPadded>;
+    // static_assert(sizeof(pixel_t) == sizeof(element_type),
+    //               "The function is made to believe that pixel and corresponding vector types are
+    //               " "layout compatible, but they are not");
+    return blaze::CustomMatrix<element_type, IsAligned, IsPadded, StorageOrder>(
+        reinterpret_cast<element_type*>(&source(0, 0)), source.height(), source.width());
 }
 
 // perform linear mapping from source range to destination range
