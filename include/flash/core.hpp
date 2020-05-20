@@ -75,17 +75,17 @@ struct true_channel_type {
     using type = ChannelType;
 };
 
+/// \cond specializations
 template <>
-struct true_channel_type<boost::gil::float32_t>
-{
+struct true_channel_type<boost::gil::float32_t> {
     using type = float;
 };
 
 template <>
-struct true_channel_type<boost::gil::float64_t>
-{
+struct true_channel_type<boost::gil::float64_t> {
     using type = double;
 };
+/// \endcond
 
 template <typename ChannelType>
 using true_channel_type_t = typename true_channel_type<ChannelType>::type;
@@ -96,10 +96,20 @@ template <typename PixelType, std::size_t... indices>
 auto pixel_to_vector_impl(const PixelType& pixel, std::integer_sequence<std::size_t, indices...>)
 {
     using channel_t = typename boost::gil::channel_type<PixelType>::type;
-    return blaze::StaticVector<true_channel_type_t<channel_t>, sizeof...(indices)>{pixel[indices]...};
+    return blaze::StaticVector<true_channel_type_t<channel_t>, sizeof...(indices)>{
+        pixel[indices]...};
 }
 } // namespace detail
 
+/** \brief Converts a pixel into `StaticVector`
+
+    Useful when working with multi-channel images
+
+    \tparam PixelType The source pixel type
+    \arg pixel The source pixel to convert into `StaticVector`
+
+    \return a `StaticVector` where elements correspond to channel values, in the same order
+*/
 template <typename PixelType>
 auto pixel_to_vector(const PixelType& pixel)
 {
@@ -107,6 +117,16 @@ auto pixel_to_vector(const PixelType& pixel)
         pixel, std::make_index_sequence<boost::gil::num_channels<PixelType>{}>{});
 }
 
+/** \brief Convert possibly multi-channel view into `DynamicMatrix` of `StaticVector`s
+
+    Works as if applying `pixel_to_vector` on each pixel to generate corresponding matrix entry
+
+    \tparam View The source view type to convert into `DynamicMatrix`
+    \arg view The source view
+
+    \return a `DynamicMatrix<StaticVector<ChannelType, num_channel>>`, where each element
+   corresponds to pixel in the view with `pixel_to_vector` applied.
+*/
 template <typename View>
 auto to_matrix_channeled(View view)
 {
@@ -127,14 +147,26 @@ auto to_matrix_channeled(View view)
     for multi-channel matrices please first check layout compatibility of the pixel type
     and corresponding `blaze::StaticVector<ChannelType, num_channels>`, then use
     `as_matrix_channeled`.
+
+    \tparam IsAligned A flag that indicates if the source view is aligned
+    \tparam IsPAdded A flag that indicates if the source view is padded
+    \tparam StorageOrder rowMajor or columnMajor
+    \tparam SingleChannelView The type of the view to get matrix view from, must have single channel
+        pixels
+    \arg source The source image view to get matrix view from
+
+    \return A `CustomMatrix<ChannelType>` with all the alignment, padding and storage order flags
 */
-template <typename SingleChannelView, blaze::AlignmentFlag IsAligned = blaze::unaligned,
-          blaze::PaddingFlag IsPadded = blaze::unpadded, bool StorageOrder = blaze::rowMajor>
+template <blaze::AlignmentFlag IsAligned = blaze::unaligned,
+          blaze::PaddingFlag IsPadded = blaze::unpadded, bool StorageOrder = blaze::rowMajor,
+          typename SingleChannelView>
 auto as_matrix(SingleChannelView source)
 {
     using channel_t = typename boost::gil::channel_type<SingleChannelView>::type;
     return blaze::CustomMatrix<channel_t, IsAligned, IsPadded, StorageOrder>(
-        reinterpret_cast<true_channel_type_t<channel_t>*>(&source(0, 0)), source.height(), source.width());
+        reinterpret_cast<true_channel_type_t<channel_t>*>(&source(0, 0)),
+        source.height(),
+        source.width());
 }
 
 /** \brief constructs `blaze::CustomMatrix` out of `image_view` whose elements are
@@ -146,21 +178,43 @@ auto as_matrix(SingleChannelView source)
     use cases, but it is advised to first check if the pixel type and resulting `StaticVector`
     are compatible, then using the function. For already tested types, please run tests for
     this function (tagged with the function name).
+
+    \tparam IsPixelAligned Flag that indicates if individual pixels inside view are aligned.
+
+    It seems like Blaze automatically pads if the flag is set, so do not set if padding will
+    be off too.
+
+    \tparam IsPixelPadded Flag that indicates if individual pixels inside view are padded.
+
+    This flag is probably the source of problems. Be careful when setting it and always
+    check if resulting `StaticVector` and pixel type are compatible
+
+    \tparam IsAligned Flag that indicates if image is aligned in memory
+    \tparam IsPadded Flag that indicates if individual rows are padded
+    \tparam StorageOrder either rowMajor or columnMajor
+    \tparam ImageView The type of image view to get channeled matrix view from
+    \arg source The image view to get channeled matrix view from
+
+    \return A `CustomMatrix<StaticVector<ChannelType, num_channel>>` with all the alignment, padding and storage order flags
 */
-template <typename ImageView, blaze::AlignmentFlag IsPixelAligned = blaze::unaligned,
+template <blaze::AlignmentFlag IsPixelAligned = blaze::unaligned,
           blaze::PaddingFlag IsPixelPadded = blaze::unpadded,
           blaze::AlignmentFlag IsAligned = blaze::unaligned,
-          blaze::PaddingFlag IsPadded = blaze::unpadded, bool StorageOrder = blaze::rowMajor>
+          blaze::PaddingFlag IsPadded = blaze::unpadded, bool StorageOrder = blaze::rowMajor,
+          typename ImageView>
 auto as_matrix_channeled(ImageView source)
 {
-    // using pixel_t = typename ImageView::value_type;
+    using pixel_t = typename ImageView::value_type;
     using channel_t = typename boost::gil::channel_type<ImageView>::type;
     constexpr auto num_channels = boost::gil::num_channels<ImageView>{};
-    using element_type = blaze::
-        StaticVector<true_channel_type_t<channel_t>, num_channels, blaze::rowMajor, IsPixelAligned, IsPixelPadded>;
-    // static_assert(sizeof(pixel_t) == sizeof(element_type),
-    //               "The function is made to believe that pixel and corresponding vector types are
-    //               " "layout compatible, but they are not");
+    using element_type = blaze::StaticVector<true_channel_type_t<channel_t>,
+                                             num_channels,
+                                             blaze::rowMajor,
+                                             IsPixelAligned,
+                                             IsPixelPadded>;
+    static_assert(sizeof(pixel_t) == sizeof(element_type),
+                  "The function is made to believe that pixel and corresponding vector types are"
+                  "layout compatible, but they are not");
     return blaze::CustomMatrix<element_type, IsAligned, IsPadded, StorageOrder>(
         reinterpret_cast<element_type*>(&source(0, 0)), source.height(), source.width());
 }
@@ -196,6 +250,15 @@ auto remap_to(const SourceMatrix& source)
     The class takes minimum and maximum along each channel and remaps it into new range. Do note
     that if a wider type is specified, `dst_min` and `dst_max` vectors has to be manually specified
     and different than type min/max. Otherwise, overflow is guaranteed.
+
+    \tparam U The type of the resulting matrix
+    \arg dst_min The minimum of the resulting range, do set manually if remapping into wider range
+    \arg dst_max The maximum of the resulting range, do set manually if remapping into wider range
+    \tparam MT The concrete type of source matrix
+    \arg source The source range to perform remapping on
+    \tparam SO Storage order of the source matrix
+
+    \return A `DynamicMatrix<StaticVector<U, length>>` where `length` if the length of vector in `source`
 */
 template <typename U, typename MT, bool SO>
 auto remap_to_channeled(const blaze::DenseMatrix<MT, SO>& source,
@@ -270,6 +333,17 @@ inline boost::gil::gray8_image_t to_gray8_image(const blaze::DynamicMatrix<std::
     return result;
 }
 
+/** \brief Converts vector into pixel
+
+    Useful when working with multi-channel images.
+
+    \tparam PixelType The pixel type to convert to
+    \tparam VT The concrete vector type
+    \arg vector The source vector to convert into `PixelType`
+    \tparam TransposeFlag Transpose flag for the vector
+
+    \return A pixel where each channel corresponds to entry in the vector, in the same order
+*/
 template <typename PixelType, typename VT, bool TransposeFlag>
 auto vector_to_pixel(const blaze::DenseVector<VT, TransposeFlag>& vector)
 {
