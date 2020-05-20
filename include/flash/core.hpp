@@ -2,6 +2,10 @@
 
 #include <algorithm>
 #include <blaze/Blaze.h>
+#include <blaze/math/AlignmentFlag.h>
+#include <blaze/math/PaddingFlag.h>
+#include <blaze/math/StorageOrder.h>
+#include <blaze/math/dense/StaticVector.h>
 #include <blaze/math/expressions/Forward.h>
 #include <blaze/math/typetraits/IsDenseVector.h>
 #include <blaze/math/typetraits/IsStatic.h>
@@ -105,6 +109,27 @@ auto as_matrix(SingleChannelView source)
     using channel_t = typename boost::gil::channel_type<SingleChannelView>::type;
     return blaze::CustomMatrix<channel_t, IsAligned, IsPadded, StorageOrder>(
         reinterpret_cast<channel_t*>(&source(0, 0)), source.height(), source.width());
+}
+
+/** \brief constructs `blaze::CustomMatrix` out of `image_view` whose elements are
+   `StaticVector<ChannelType, num_channels>`
+*/
+template <typename ImageView, blaze::AlignmentFlag IsPixelAligned = blaze::unaligned,
+          blaze::PaddingFlag IsPixelPadded = blaze::unpadded,
+          blaze::AlignmentFlag IsAligned = blaze::unaligned,
+          blaze::PaddingFlag IsPadded = blaze::unpadded, bool StorageOrder = blaze::rowMajor>
+auto as_matrix_channeled(ImageView source)
+{
+    // using pixel_t = typename ImageView::value_type;
+    using channel_t = typename boost::gil::channel_type<ImageView>::type;
+    constexpr auto num_channels = boost::gil::num_channels<ImageView>{};
+    using element_type = blaze::
+        StaticVector<channel_t, num_channels, blaze::rowMajor, IsPixelAligned, IsPixelPadded>;
+    // static_assert(sizeof(pixel_t) == sizeof(element_type),
+    //               "The function is made to believe that pixel and corresponding vector types are
+    //               " "layout compatible, but they are not");
+    return blaze::CustomMatrix<element_type, IsAligned, IsPadded, StorageOrder>(
+        reinterpret_cast<element_type*>(&source(0, 0)), source.height(), source.width());
 }
 
 // perform linear mapping from source range to destination range
