@@ -1,8 +1,4 @@
-if (USE_CONAN)
-    add_library(Catch2::Catch2 ALIAS CONAN_PKG::Catch2)
-else()
-    find_package(Catch2 REQUIRED)
-endif()
+find_package(Catch2 REQUIRED)
 
 include(Catch)
 

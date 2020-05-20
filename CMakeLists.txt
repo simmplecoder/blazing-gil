@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 option(use_conan "Use Conan to install dependencies")
 # option(blas_lib_name "BLAS library to use as backend for Blaze. Only Intel MKL is supported for now. The specified library must be the one Blaze is configured for" "MKL")
-set(blas_lib_name "MKL" CACHE PATH "BLAS library to use as backend for Blaze. Only Intel MKL is supported for now. The specified library must be the one Blaze is configured for.")
+set(blas_lib_name "MKL" CACHE STRING "BLAS library to use as backend for Blaze. Only Intel MKL is supported for now. The specified library must be the one Blaze is configured for.")
 
 ### setup dependencies for blazing-gil
 
@@ -33,6 +33,10 @@ find_package(blaze REQUIRED)
 ### GIL dependencies - jpeg, png, tiff, tiffxx, Boost::filesystem, Boost::headers (headers)
 add_library(GIL INTERFACE)
 
+find_package(Boost
+        COMPONENTS
+        filesystem
+        REQUIRED)
 if (USE_CONAN)
   # Download automatically, you can also just copy the conan.cmake file
   if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
@@ -61,10 +65,6 @@ if (USE_CONAN)
       Boost::headers
       Boost::filesystem)
 else()
-  find_package(Boost
-    COMPONENTS
-      filesystem
-    REQUIRED)
   find_package(JPEG REQUIRED)
   find_package(PNG REQUIRED)
   find_package(TIFF REQUIRED)
