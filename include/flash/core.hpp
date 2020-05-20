@@ -64,6 +64,12 @@ using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 template <typename T>
 using image_matrix = blaze::CustomMatrix<T, blaze::unaligned, blaze::unpadded>;
 
+/** \brief Used to bypass scoped_channel_type of GIL
+
+    Some channel types in GIL, like `gil::float32_t` and `gil::float64_t` have a different type
+    compared to it's underlying float type (because they constrain the range to be [0...1]),
+    this struct will strip that and provide typedef equal to the underlying channel type.
+*/
 template <typename ChannelType>
 struct true_channel_type {
     using type = ChannelType;
@@ -132,7 +138,14 @@ auto as_matrix(SingleChannelView source)
 }
 
 /** \brief constructs `blaze::CustomMatrix` out of `image_view` whose elements are
-   `StaticVector<ChannelType, num_channels>`
+    `StaticVector<ChannelType, num_channels>`
+
+    Please note that there are layout incompatibilities between Blaze's `StaticVector` and
+    GIL's pixel types. GIL's pixel types are padded to 4 byte boundary if the size is less than
+    8 bytes, while Blaze pads to 16. There is a `static_assert` that prevents obviously wrong
+    use cases, but it is advised to first check if the pixel type and resulting `StaticVector`
+    are compatible, then using the function. For already tested types, please run tests for
+    this function (tagged with the function name).
 */
 template <typename ImageView, blaze::AlignmentFlag IsPixelAligned = blaze::unaligned,
           blaze::PaddingFlag IsPixelPadded = blaze::unpadded,
