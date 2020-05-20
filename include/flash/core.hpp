@@ -64,13 +64,33 @@ using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
 template <typename T>
 using image_matrix = blaze::CustomMatrix<T, blaze::unaligned, blaze::unpadded>;
 
+template <typename ChannelType>
+struct true_channel_type {
+    using type = ChannelType;
+};
+
+template <>
+struct true_channel_type<boost::gil::float32_t>
+{
+    using type = float;
+};
+
+template <>
+struct true_channel_type<boost::gil::float64_t>
+{
+    using type = double;
+};
+
+template <typename ChannelType>
+using true_channel_type_t = typename true_channel_type<ChannelType>::type;
+
 namespace detail
 {
 template <typename PixelType, std::size_t... indices>
 auto pixel_to_vector_impl(const PixelType& pixel, std::integer_sequence<std::size_t, indices...>)
 {
-    using ChannelType = typename boost::gil::channel_type<PixelType>::type;
-    return blaze::StaticVector<ChannelType, sizeof...(indices)>{pixel[indices]...};
+    using channel_t = typename boost::gil::channel_type<PixelType>::type;
+    return blaze::StaticVector<true_channel_type_t<channel_t>, sizeof...(indices)>{pixel[indices]...};
 }
 } // namespace detail
 
@@ -108,7 +128,7 @@ auto as_matrix(SingleChannelView source)
 {
     using channel_t = typename boost::gil::channel_type<SingleChannelView>::type;
     return blaze::CustomMatrix<channel_t, IsAligned, IsPadded, StorageOrder>(
-        reinterpret_cast<channel_t*>(&source(0, 0)), source.height(), source.width());
+        reinterpret_cast<true_channel_type_t<channel_t>*>(&source(0, 0)), source.height(), source.width());
 }
 
 /** \brief constructs `blaze::CustomMatrix` out of `image_view` whose elements are
@@ -124,7 +144,7 @@ auto as_matrix_channeled(ImageView source)
     using channel_t = typename boost::gil::channel_type<ImageView>::type;
     constexpr auto num_channels = boost::gil::num_channels<ImageView>{};
     using element_type = blaze::
-        StaticVector<channel_t, num_channels, blaze::rowMajor, IsPixelAligned, IsPixelPadded>;
+        StaticVector<true_channel_type_t<channel_t>, num_channels, blaze::rowMajor, IsPixelAligned, IsPixelPadded>;
     // static_assert(sizeof(pixel_t) == sizeof(element_type),
     //               "The function is made to believe that pixel and corresponding vector types are
     //               " "layout compatible, but they are not");
