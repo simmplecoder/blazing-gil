@@ -5,7 +5,7 @@
 #include <boost/gil/image_view.hpp>
 #include <boost/gil/typedefs.hpp>
 
-#include <CLI11.hpp>
+#include <CLI/CLI.hpp>
 
 #include <flash/core.hpp>
 #include <flash/numeric.hpp>
@@ -25,8 +25,7 @@ int main(int argc, char* argv[])
     std::int32_t dets_threshold;
     std::int32_t traces_threshold;
 
-    CLI::App app{
-        "Demonstration of Hessian affine region detector - finding corners"};
+    CLI::App app{"Demonstration of Hessian affine region detector - finding corners"};
     app.add_option("i,--input", input_file, "PNG file with RGB colorspace")
         ->required()
         ->check(CLI::ExistingFile);
@@ -45,10 +44,8 @@ int main(int argc, char* argv[])
                    "Output file that will contain green markers where Hessian "
                    "corner detector tested positive")
         ->required();
-    app.add_option("dt", dets_threshold, "Threshold for determinants response")
-        ->required();
-    app.add_option("tt", traces_threshold, "Threshold for traces response")
-        ->required();
+    app.add_option("dt", dets_threshold, "Threshold for determinants response")->required();
+    app.add_option("tt", traces_threshold, "Threshold for traces response")->required();
 
     CLI11_PARSE(app, argc, argv);
 
@@ -61,21 +58,20 @@ int main(int argc, char* argv[])
     auto image = flash::to_matrix(gil::view(gray));
     blaze::DynamicMatrix<std::int16_t> mat(image);
     auto hessian_result = flash::hessian(mat);
-    auto thresholded_dets = blaze::evaluate(
-        blaze::map(hessian_result.determinants, [dets_threshold](auto x) {
+    auto thresholded_dets =
+        blaze::evaluate(blaze::map(hessian_result.determinants, [dets_threshold](auto x) {
             return x < dets_threshold ? 0 : x;
         }));
-    auto thresholded_traces = blaze::evaluate(
-        blaze::map(hessian_result.traces, [traces_threshold](auto x) {
+    auto thresholded_traces =
+        blaze::evaluate(blaze::map(hessian_result.traces, [traces_threshold](auto x) {
             return x < traces_threshold ? 0 : x;
         }));
     auto dets_nonmax_map = flash::nonmax_map(thresholded_dets, 3);
     auto trace_nonmax_map = flash::nonmax_map(thresholded_traces, 3);
 
-    auto determinants_map = flash::to_gray8_image(
-        flash::remap_to<unsigned char>(hessian_result.determinants));
-    auto traces_map = flash::to_gray8_image(
-        flash::remap_to<unsigned char>(hessian_result.traces));
+    auto determinants_map =
+        flash::to_gray8_image(flash::remap_to<unsigned char>(hessian_result.determinants));
+    auto traces_map = flash::to_gray8_image(flash::remap_to<unsigned char>(hessian_result.traces));
     for (std::size_t i = 0; i < image.rows(); ++i) {
         for (std::size_t j = 0; j < image.columns(); ++j) {
             if (!dets_nonmax_map(i, j) || !trace_nonmax_map(i, j)) {
@@ -84,13 +80,11 @@ int main(int argc, char* argv[])
         }
     }
 
-    std::cout << "Gradient range: " << blaze::max(hessian_result.determinants)
-              << ' ' << blaze::min(hessian_result.determinants) << '\n'
-              << "Final gray image range: "
-              << static_cast<int>(blaze::max(image)) << ' '
+    std::cout << "Gradient range: " << blaze::max(hessian_result.determinants) << ' '
+              << blaze::min(hessian_result.determinants) << '\n'
+              << "Final gray image range: " << static_cast<int>(blaze::max(image)) << ' '
               << static_cast<int>(blaze::min(image)) << '\n';
-    gil::write_view(
-        determinants_map_file, gil::view(determinants_map), gil::png_tag{});
+    gil::write_view(determinants_map_file, gil::view(determinants_map), gil::png_tag{});
     gil::write_view(traces_map_file, gil::view(traces_map), gil::png_tag{});
     gil::write_view(output_file, gil::view(input), gil::png_tag{});
 }

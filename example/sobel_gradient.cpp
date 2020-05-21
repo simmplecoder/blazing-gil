@@ -5,7 +5,7 @@
 #include <boost/gil/image_view.hpp>
 #include <boost/gil/typedefs.hpp>
 
-#include <CLI11.hpp>
+#include <CLI/CLI.hpp>
 
 #include <flash/convolution.hpp>
 #include <flash/core.hpp>
@@ -17,20 +17,15 @@ namespace gil = boost::gil;
 
 int main(int argc, char* argv[])
 {
-    CLI::App app{
-        "Demonstration of Sobel operator usage - gradient calculation"};
+    CLI::App app{"Demonstration of Sobel operator usage - gradient calculation"};
     std::string input_file;
     std::string output_file;
 
-    app.add_option("i,--input",
-                   input_file,
-                   "PNG input file with RGB layout (no alpha channel)")
+    app.add_option("i,--input", input_file, "PNG input file with RGB layout (no alpha channel)")
         ->required()
         ->check(CLI::ExistingFile);
 
-    app.add_option("o,--output",
-                   output_file,
-                   "PNG output file, will be 8 bit grayscale")
+    app.add_option("o,--output", output_file, "PNG output file, will be 8 bit grayscale")
         ->required();
 
     CLI11_PARSE(app, argc, argv);
@@ -47,16 +42,13 @@ int main(int argc, char* argv[])
 
     auto dy = flash::convolve(mat, flash::sobel_y);
 
-    auto gradient = blaze::map(dx, dy, [](std::int16_t x, std::int16_t y) {
-        return std::sqrt(x * x + y * y);
-    });
+    auto gradient =
+        blaze::map(dx, dy, [](std::int16_t x, std::int16_t y) { return std::sqrt(x * x + y * y); });
 
     image = flash::remap_to<unsigned char>(gradient);
 
-    std::cout << "Gradient range: " << blaze::max(gradient) << ' '
-              << blaze::min(gradient) << '\n'
-              << "Final gray image range: "
-              << static_cast<int>(blaze::max(image)) << ' '
+    std::cout << "Gradient range: " << blaze::max(gradient) << ' ' << blaze::min(gradient) << '\n'
+              << "Final gray image range: " << static_cast<int>(blaze::max(image)) << ' '
               << static_cast<int>(blaze::min(image)) << '\n';
     // gil::write_view(argv[2],
     // gil::color_converted_view<gil::gray16_pixel_t>(gil::view(gray)),

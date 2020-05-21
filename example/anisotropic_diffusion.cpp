@@ -5,7 +5,7 @@
 #include <boost/gil/image_view.hpp>
 #include <boost/gil/typedefs.hpp>
 
-#include <CLI11.hpp>
+#include <CLI/CLI.hpp>
 
 #include <iostream>
 #include <limits>
@@ -23,22 +23,15 @@ int main(int argc, char* argv[])
     double kappa = 30;
     std::int64_t iteration_count = 10;
 
-    app.add_option(
-           "i,--input", input_file, "PNG input file with RGB colorspace")
+    app.add_option("i,--input", input_file, "PNG input file with RGB colorspace")
         ->required()
         ->check(CLI::ExistingFile);
-    app.add_option(
-           "o,--output", output_file, "PNG output file that will be grayscale")
-        ->required();
-    app.add_option(
-        "k,--kappa",
-        kappa,
-        "Control how well edges are respected, smaller value = more respect",
-        true);
-    app.add_option("it,--iteration",
-                   iteration_count,
-                   "How many diffusion iteration to do",
+    app.add_option("o,--output", output_file, "PNG output file that will be grayscale")->required();
+    app.add_option("k,--kappa",
+                   kappa,
+                   "Control how well edges are respected, smaller value = more respect",
                    true);
+    app.add_option("it,--iteration", iteration_count, "How many diffusion iteration to do", true);
 
     CLI11_PARSE(app, argc, argv);
 
@@ -54,10 +47,8 @@ int main(int argc, char* argv[])
 
     image = flash::remap_to<unsigned char>(diffused);
 
-    std::cout << "Gradient range: " << blaze::max(diffused) << ' '
-              << blaze::min(diffused) << '\n'
-              << "Final gray image range: "
-              << static_cast<int>(blaze::max(image)) << ' '
+    std::cout << "Gradient range: " << blaze::max(diffused) << ' ' << blaze::min(diffused) << '\n'
+              << "Final gray image range: " << static_cast<int>(blaze::max(image)) << ' '
               << static_cast<int>(blaze::min(image)) << '\n';
     gil::write_view(output_file, gil::view(gray), gil::png_tag{});
 }

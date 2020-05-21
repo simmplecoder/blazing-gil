@@ -103,8 +103,6 @@ target_link_libraries(blazing-gil INTERFACE GIL blas_library)
 
 
 ### dependencies for examples
-add_library(cli11 INTERFACE)
-target_include_directories(cli11 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/cli11)
 add_subdirectory(example)
 
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
