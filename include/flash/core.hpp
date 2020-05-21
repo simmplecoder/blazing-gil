@@ -17,6 +17,7 @@
 #include <boost/gil/typedefs.hpp>
 #include <iostream>
 #include <limits>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
@@ -89,6 +90,57 @@ struct true_channel_type<boost::gil::float64_t> {
 
 template <typename ChannelType>
 using true_channel_type_t = typename true_channel_type<ChannelType>::type;
+
+/** \brief Extract `channel`th value from each pixel in `view` and writes into `result`
+
+   The function can be used with multi channel views, just the `channel` argument might need to be
+   adjusted to select appropriate channel. Do note that it will strip wrapper type around floating
+   point types like gil::float32_t, etc.
+
+    \arg channel The channel to extract from pixels, defaults to 0
+    \tparam View The source view type to convert into matrix
+    \arg view The source view to convert into matrix
+    \tparam MT The concrete type of matrix
+    \arg result The out argument to write result into
+    \tparam SO Storage order flag
+*/
+template <typename View, typename MT, bool SO>
+void to_matrix(View view, blaze::DenseMatrix<MT, SO>& result, signed_size channel = 0)
+{
+    constexpr auto num_channels = boost::gil::num_channels<View>{};
+    if (channel >= num_channels) {
+        throw std::invalid_argument("channel index exceeds available channels in the view");
+    }
+    (~result) = blaze::generate(
+        view.height(), view.width(), [&view, channel](std::size_t i, std::size_t j) {
+            using element_type = blaze::UnderlyingElement_t<MT>;
+            return static_cast<element_type>(view(j, i)[channel]);
+        });
+}
+
+/** \brief Converts an image view into `DynamicMatrix<ChannelType>`, where each entry corresponds to
+   selected channel value of the pixel entry
+
+   The function can be used with multi channel views, just the `channel` argument might need to be
+   adjusted to select appropriate channel. Do note that it will strip wrapper type around floating
+   point types like gil::float32_t, etc.
+
+    \arg channel The channel to extract from pixels, defaults to 0
+    \tparam View The source view type to convert into matrix
+    \arg view The source view to convert into matrix
+*/
+template <typename View>
+auto to_matrix(View view, signed_size channel = 0)
+{
+    constexpr auto num_channels = boost::gil::num_channels<View>{};
+    if (channel >= num_channels) {
+        throw std::invalid_argument("channel index exceeds available channels in the view");
+    }
+    using channel_type = typename boost::gil::channel_type<View>::type;
+    blaze::DynamicMatrix<true_channel_type_t<channel_type>> result(view.height(), view.width());
+    to_matrix(view, result, channel);
+    return result;
+}
 
 namespace detail
 {
@@ -195,7 +247,8 @@ auto as_matrix(SingleChannelView source)
     \tparam ImageView The type of image view to get channeled matrix view from
     \arg source The image view to get channeled matrix view from
 
-    \return A `CustomMatrix<StaticVector<ChannelType, num_channel>>` with all the alignment, padding and storage order flags
+    \return A `CustomMatrix<StaticVector<ChannelType, num_channel>>` with all the alignment, padding
+   and storage order flags
 */
 template <blaze::AlignmentFlag IsPixelAligned = blaze::unaligned,
           blaze::PaddingFlag IsPixelPadded = blaze::unpadded,
@@ -258,7 +311,8 @@ auto remap_to(const SourceMatrix& source)
     \arg source The source range to perform remapping on
     \tparam SO Storage order of the source matrix
 
-    \return A `DynamicMatrix<StaticVector<U, length>>` where `length` if the length of vector in `source`
+    \return A `DynamicMatrix<StaticVector<U, length>>` where `length` if the length of vector in
+   `source`
 */
 template <typename U, typename MT, bool SO>
 auto remap_to_channeled(const blaze::DenseMatrix<MT, SO>& source,
