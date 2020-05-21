@@ -4,7 +4,7 @@ include(Catch)
 
 add_executable(test_target 
     remap_test.cpp 
-    to_matrix_test.cpp 
+    to_matrix_channeled_test.cpp 
     rm_cvref_test.cpp 
     pixel_to_vector_test.cpp 
     vector_to_pixel_test.cpp 
