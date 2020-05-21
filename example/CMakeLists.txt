@@ -1,3 +1,7 @@
+if (NOT USE_CONAN)
+    find_package(CLI11 REQUIRED)
+endif()
+
 foreach(example 
     sobel_gradient
     harris
@@ -9,7 +13,9 @@ foreach(example
     lanczos_scaling
     matrix_channeled)
     add_executable(${example} ${example}.cpp)
-    target_link_libraries(${example} blazing-gil cli11)
+    target_link_libraries(${example} PRIVATE
+        blazing-gil 
+        $<IF:$<BOOL:${USE_CONAN}>,CONAN_PKG::CLI11,CLI11::CLI11>)
     target_compile_options(${example} PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic -Werror>

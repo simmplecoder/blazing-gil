@@ -5,7 +5,7 @@
 #include <boost/gil/image_view.hpp>
 #include <boost/gil/typedefs.hpp>
 
-#include <CLI11.hpp>
+#include <CLI/CLI.hpp>
 
 #include <iostream>
 #include <limits>
@@ -23,15 +23,13 @@ int main(int argc, char* argv[])
     double k = 0.04;
     std::int64_t threshold;
 
-    CLI::App app{
-        "Demonstration of Harris affine region detector - finding corners"};
+    CLI::App app{"Demonstration of Harris affine region detector - finding corners"};
     app.add_option("i,--input", input_file, "PNG file with RGB colorspace")
         ->required()
         ->check(CLI::ExistingFile);
-    app.add_option(
-           "hrf",
-           harris_response_file,
-           "Grayscale image that will contain Harris response as pixels")
+    app.add_option("hrf",
+                   harris_response_file,
+                   "Grayscale image that will contain Harris response as pixels")
         ->required();
     app.add_option("o,--output",
                    output_file,
@@ -43,10 +41,7 @@ int main(int argc, char* argv[])
                    "Threshold value to test on during marking the input file "
                    "with green pixels")
         ->required();
-    app.add_option("k,--discriminant",
-                   k,
-                   "Discriminator to prefer corners to edges",
-                   true);
+    app.add_option("k,--discriminant", k, "Discriminator to prefer corners to edges", true);
 
     CLI11_PARSE(app, argc, argv);
 
@@ -75,10 +70,8 @@ int main(int argc, char* argv[])
         }
     }
 
-    std::cout << "Gradient range: " << blaze::max(harris) << ' '
-              << blaze::min(harris) << '\n'
-              << "Final gray image range: "
-              << static_cast<int>(blaze::max(image)) << ' '
+    std::cout << "Gradient range: " << blaze::max(harris) << ' ' << blaze::min(harris) << '\n'
+              << "Final gray image range: " << static_cast<int>(blaze::max(image)) << ' '
               << static_cast<int>(blaze::min(image)) << '\n';
     gil::write_view(harris_response_file, gil::view(gray), gil::png_tag{});
     gil::write_view(output_file, gil::view(input), gil::png_tag{});
