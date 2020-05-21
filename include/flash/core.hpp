@@ -91,11 +91,35 @@ struct true_channel_type<boost::gil::float64_t> {
 template <typename ChannelType>
 using true_channel_type_t = typename true_channel_type<ChannelType>::type;
 
+/** \brief Extract `channel`th value from each pixel in `view` and writes into `result`
+
+   The function can be used with multi channel views, just the `channel` argument might need to be
+   adjusted to select appropriate channel. Do note that it will strip wrapper type around floating
+   point types like gil::float32_t, etc.
+
+    \arg channel The channel to extract from pixels, defaults to 0
+    \tparam View The source view type to convert into matrix
+    \arg view The source view to convert into matrix
+    \tparam MT The concrete type of matrix
+    \arg result The out argument to write result into
+    \tparam SO Storage order flag
+*/
+template <typename View, typename MT, bool SO>
+void to_matrix(View view, blaze::DenseMatrix<MT, SO>& result, signed_size channel = 0)
+{
+    (~result) = blaze::generate(
+        view.height(), view.width(), [&view, channel](std::size_t i, std::size_t j) {
+            using element_type = blaze::UnderlyingElement_t<MT>;
+            return static_cast<element_type>(view(j, i)[channel]);
+        });
+}
+
 /** \brief Converts an image view into `DynamicMatrix<ChannelType>`, where each entry corresponds to
    selected channel value of the pixel entry
 
    The function can be used with multi channel views, just the `channel` argument might need to be
-   adjusted to select appropriate channel.
+   adjusted to select appropriate channel. Do note that it will strip wrapper type around floating
+   point types like gil::float32_t, etc.
 
     \arg channel The channel to extract from pixels, defaults to 0
     \tparam View The source view type to convert into matrix
@@ -108,11 +132,10 @@ auto to_matrix(View view, signed_size channel = 0)
     if (channel >= num_channels) {
         throw std::invalid_argument("channel index exceeds available channels in the view");
     }
-    return blaze::evaluate(blaze::generate(
-        view.height(), view.width(), [&view, channel](std::size_t i, std::size_t j) {
-            using channel_type = typename boost::gil::channel_type<View>::type;
-            return static_cast<true_channel_type_t<channel_type>>(view(j, i)[channel]);
-        }));
+    using channel_type = typename boost::gil::channel_type<View>::type;
+    blaze::DynamicMatrix<true_channel_type_t<channel_type>> result(view.height(), view.width());
+    to_matrix(view, result, channel);
+    return result;
 }
 
 namespace detail
