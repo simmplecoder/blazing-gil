@@ -105,7 +105,7 @@ using true_channel_type_t = typename true_channel_type<ChannelType>::type;
     \tparam SO Storage order flag
 */
 template <typename View, typename MT, bool SO>
-void to_matrix(View view, blaze::DenseMatrix<MT, SO>& result, signed_size channel = 0)
+void to_matrix(View view, blaze::DenseMatrix<MT, SO>& result, std::size_t channel = 0)
 {
     constexpr auto num_channels = boost::gil::num_channels<View>{};
     if (channel >= num_channels) {
@@ -130,7 +130,7 @@ void to_matrix(View view, blaze::DenseMatrix<MT, SO>& result, signed_size channe
     \arg view The source view to convert into matrix
 */
 template <typename View>
-auto to_matrix(View view, signed_size channel = 0)
+auto to_matrix(View view, std::size_t channel = 0)
 {
     constexpr auto num_channels = boost::gil::num_channels<View>{};
     if (channel >= num_channels) {
