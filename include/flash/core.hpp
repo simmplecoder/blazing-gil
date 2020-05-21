@@ -91,6 +91,16 @@ struct true_channel_type<boost::gil::float64_t> {
 template <typename ChannelType>
 using true_channel_type_t = typename true_channel_type<ChannelType>::type;
 
+/** \brief Converts an image view into `DynamicMatrix<ChannelType>`, where each entry corresponds to
+   selected channel value of the pixel entry
+
+   The function can be used with multi channel views, just the `channel` argument might need to be
+   adjusted to select appropriate channel.
+
+    \arg channel The channel to extract from pixels, defaults to 0
+    \tparam View The source view type to convert into matrix
+    \arg view The source view to convert into matrix
+*/
 template <typename View>
 auto to_matrix(View view, signed_size channel = 0)
 {
