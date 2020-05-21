@@ -107,6 +107,10 @@ using true_channel_type_t = typename true_channel_type<ChannelType>::type;
 template <typename View, typename MT, bool SO>
 void to_matrix(View view, blaze::DenseMatrix<MT, SO>& result, signed_size channel = 0)
 {
+    constexpr auto num_channels = boost::gil::num_channels<View>{};
+    if (channel >= num_channels) {
+        throw std::invalid_argument("channel index exceeds available channels in the view");
+    }
     (~result) = blaze::generate(
         view.height(), view.width(), [&view, channel](std::size_t i, std::size_t j) {
             using element_type = blaze::UnderlyingElement_t<MT>;
