@@ -49,6 +49,9 @@ void test_to_matrix_type()
             }
         }
     }
+
+    REQUIRE_THROWS(flash::to_matrix(view, num_channels));
+    REQUIRE_THROWS(flash::to_matrix(view, num_channels + 1));
 }
 
 TEST_CASE("gray8 to_matrix", "[to_matrix]")
