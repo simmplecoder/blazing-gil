@@ -98,8 +98,14 @@ endif()
 
 ### create the library target - blazing-gil
 add_library(blazing-gil INTERFACE)
-target_include_directories(blazing-gil INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(blazing-gil INTERFACE GIL blas_library)
+target_include_directories(blazing-gil INTERFACE 
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+target_link_libraries(blazing-gil INTERFACE 
+  $<BUILD_INTERFACE:GIL>
+  $<BUILD_INTERFACE:blas_library>)
+
+add_library(blazing-gil::blazing-gil ALIAS blazing-gil)
 
 
 ### dependencies for examples
@@ -112,3 +118,19 @@ endif()
 if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTING)
   add_subdirectory(test)
 endif()
+
+include(GNUInstallDirs)
+
+install(TARGETS blazing-gil
+  EXPORT blazing-gilConfig
+  INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+
+install(
+  DIRECTORY
+    include/
+  DESTINATION
+    "${CMAKE_INSTALL_INCLUDEDIR}")
+
+install(EXPORT blazing-gilConfig
+  NAMESPACE blazing-gil::
+  DESTINATION lib/cmake/blazing-gil)
