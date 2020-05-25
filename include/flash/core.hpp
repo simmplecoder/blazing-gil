@@ -15,7 +15,6 @@
 #include <boost/gil/image_view.hpp>
 #include <boost/gil/pixel.hpp>
 #include <boost/gil/typedefs.hpp>
-#include <iostream>
 #include <limits>
 #include <stdexcept>
 #include <type_traits>

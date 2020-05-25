@@ -51,22 +51,51 @@ void test_vector_matrix_type()
         REQUIRE(result == expected);
     }
 
-// different scope
-{
-    PixelType pixel;
-    VectorType vector;    
-    auto num_channels = gil::num_channels<PixelType>::value;
-    for (flash::signed_size i = 0; i < num_channels; ++i) {
-        pixel[i] = i;
-        vector[static_cast<std::size_t>(i)] = i;
-    }
+    // different scope
+    {
+        PixelType pixel;
+        VectorType vector;
+        auto num_channels = gil::num_channels<PixelType>::value;
+        for (flash::signed_size i = 0; i < num_channels; ++i) {
+            pixel[i] = i;
+            vector[static_cast<std::size_t>(i)] = i;
+        }
 
-    ImageType expected(16, 16, pixel);
-    blaze::DynamicMatrix<VectorType> input(16, 16, vector);
+        ImageType expected(16, 16, pixel);
+        blaze::DynamicMatrix<VectorType> input(16, 16, vector);
+
+        auto result = flash::from_matrix<ImageType, PixelType>(input);
+        REQUIRE(result == expected);
+    }
+}
+
+template <typename ScalarType, typename ImageType,
+          typename PixelType = typename ImageType::value_type>
+void test_scalar_matrix_type()
+{
+    blaze::DynamicMatrix<ScalarType> input(16, 16, 0);
+    ImageType expected(16, 16, create_zero_pixel<PixelType>());
 
     auto result = flash::from_matrix<ImageType, PixelType>(input);
+    STATIC_REQUIRE(std::is_same_v<decltype(result), ImageType>);
     REQUIRE(result == expected);
-}
+
+    // same but non-zero value
+    ScalarType value = 23;
+    input = value;
+    gil::fill_pixels(gil::view(expected), PixelType(value));
+    auto uniform_test_result = flash::from_matrix<ImageType, PixelType>(input);
+    REQUIRE(uniform_test_result == expected);
+
+    auto view = gil::view(expected);
+
+    input(0, 0) = 0;
+    input(0, 10) = 0;
+    view(0, 0)[0] = 0;
+    view(10, 0)[0] = 0;
+
+    auto nonuniform_test_result = flash::from_matrix<ImageType, PixelType>(input);
+    REQUIRE(nonuniform_test_result == expected);
 }
 
 TEST_CASE("Matrix to rgb8 image", "[from_matrix]")
@@ -76,84 +105,65 @@ TEST_CASE("Matrix to rgb8 image", "[from_matrix]")
     test_vector_matrix_type<vector_type, image_type>();
 }
 
-// TEST_CASE("matrix to gray8 image conversion typecheck", "[to_matrix_channeled]")
-// {
-//     // gil::gray8_image_t input(16, 16, gil::gray8_pixel_t(13));
-//     // auto matrix = flash::to_matrix_channeled(gil::view(input));
-//     // STATIC_REQUIRE(std::is_same_v<blaze::StaticVector<std::uint8_t, 1>,
-//     //                               blaze::UnderlyingElement_t<decltype(matrix)>>);
-//     blaze::DynamicMatrix<blaze::StaticVector<std::uint8_t, 1>> matrix(16, 16);
-//     auto image = flash::from_matrix<gil::gray8_image_t>(matrix);
-//     STATIC_REQUIRE(std::is_same_v<decltype(image), gil::gray8_image_t>);
-// }
+TEST_CASE("Matrix to rgb32f image", "[from_matrix]")
+{
+    using image_type = gil::rgb32f_image_t;
+    using vector_type = blaze::StaticVector<float, 3>;
+    test_vector_matrix_type<vector_type, image_type>();
+}
 
-// TEST_CASE("matrix to gray8 image values check", "[to_matrix_channeled]")
-// {
-//     // gil::gray8_image_t input(16, 16, gil::gray8_pixel_t(13));
-//     // auto matrix = flash::to_matrix_channeled(gil::view(input));
-//     // blaze::DynamicMatrix<blaze::StaticVector<std::uint8_t, 1>> expected(16, 16, {13});
+TEST_CASE("Matrix to rgba32f image", "[from_matrix]")
+{
+    using image_type = gil::rgba32f_image_t;
+    using vector_type = blaze::StaticVector<float, 4>;
+    test_vector_matrix_type<vector_type, image_type>();
+}
 
-//     // REQUIRE(matrix == expected);
-//     const std::uint8_t value = 23;
-//     blaze::DynamicMatrix<blaze::StaticVector<std::uint8_t, 1>> matrix(16, 16, {value});
-//     gil::gray8_image_t expected(16, 16, gil::gray8_pixel_t(value));
+TEST_CASE("Matrix to rgba8 image", "[from_matrix]")
+{
+    using image_type = gil::rgba8_image_t;
+    using vector_type = blaze::StaticVector<gil::uint8_t, 4>;
+    test_vector_matrix_type<vector_type, image_type>();
+}
 
-//     auto result = flash::from_matrix<gil::gray8_image_t>(matrix);
-//     REQUIRE(result == expected);
-// }
+TEST_CASE("Matrix to gray8 image", "[from_matrix]")
+{
+    using image_type = gil::gray8_image_t;
+    using vector_type = blaze::StaticVector<gil::uint8_t, 1>;
+    test_vector_matrix_type<vector_type, image_type>();
+}
 
-// TEST_CASE("matrix with differing values to gray8 image value check", "[to_matrix_channeled]")
-// {
-//     gil::gray8_image_t expected(16, 16, gil::gray8_pixel_t(13));
-//     auto view = gil::view(expected);
-//     view(0, 0)[0] = 0;
-//     view(1, 0)[0] = 1; // rows and cols are different for GIL vs Blaze
+TEST_CASE("Matrix to gray16 image", "[from_matrix]")
+{
+    using image_type = gil::gray8_image_t;
+    using vector_type = blaze::StaticVector<gil::uint16_t, 1>;
+    test_vector_matrix_type<vector_type, image_type>();
+}
 
-//     blaze::DynamicMatrix<blaze::StaticVector<std::uint8_t, 1>> input(16, 16, {13});
-//     input(0, 0)[0] = 0;
-//     input(0, 1)[0] = 1;
-//     auto result = flash::from_matrix<gil::gray8_image_t>(input);
+TEST_CASE("Matrix to gray32f image", "[from_matrix]")
+{
+    using image_type = gil::gray32f_image_t;
+    using vector_type = blaze::StaticVector<float, 1>;
+    test_vector_matrix_type<vector_type, image_type>();
+}
 
-//     REQUIRE(result == expected);
-// }
+TEST_CASE("Scalar matrix to gray8 image", "[from_matrix]")
+{
+    using image_type = gil::gray8_image_t;
+    using scalar_type = std::uint8_t;
+    test_scalar_matrix_type<scalar_type, image_type>();    
+}
 
-// TEST_CASE("matrix to rgb8 image typecheck", "[to_matrix_channeled]")
-// {
-//     gil::rgb8_pixel_t default_pixel(1, 2, 3);
-//     gil::rgb8_image_t result(16, 16, default_pixel);
+TEST_CASE("Scalar matrix to gray16 image", "[from_matrix]")
+{
+    using image_type = gil::gray16_image_t;
+    using scalar_type = std::uint16_t;
+    test_scalar_matrix_type<scalar_type, image_type>();    
+}
 
-//     blaze::StaticVector<std::uint8_t, 3> default_vector({1, 2, 3});
-//     blaze::DynamicMatrix<blaze::StaticVector<std::uint8_t, 3>> input(16, 16, default_vector);
-
-//     auto result = flash::from_matrix<gil::rgb8_image_t>(gil::view(input));
-//     STATIC_REQUIRE(std::is_same_v<gil::rgb8_image_t, decltype(result)>);
-// }
-
-// TEST_CASE("matrix to rgb8 image value check", "[to_matrix_channeled]")
-// {
-//     gil::rgb8_pixel_t default_pixel(1, 2, 3);
-//     gil::rgb8_image_t expected(16, 16, default_pixel);
-
-//     blaze::StaticVector<std::uint8_t, 3> default_vector({1, 2, 3});
-//     blaze::DynamicMatrix<blaze::StaticVector<std::uint8_t, 3>> input(16, 16, default_vector);
-
-//     auto result = flash::to_matrix_channeled(gil::view(input));
-//     REQUIRE(result == expected);
-// }
-
-// TEST_CASE("matrix with differing values to rgb8 image value check", "[to_matrix_channeled]")
-// {
-//     gil::rgb8_pixel_t default_pixel(1, 2, 3);
-//     gil::rgb8_image_t expected(16, 16, default_pixel);
-//     auto view = gil::view(expected);
-//     view(0, 0) = gil::rgb8_pixel_t(10, 20, 30);
-//     view(1, 0) = gil::rgb8_pixel_t(50, 50, 50);
-
-//     blaze::StaticVector<std::uint8_t, 3> default_vector({1, 2, 3});
-//     blaze::DynamicMatrix<blaze::StaticVector<std::uint8_t, 3>> input(16, 16, default_vector);
-//     expected(0, 0) = {10, 20, 30};
-//     expected(0, 1) = {50, 50, 50};
-
-//     auto result = flash::to_matrix_channeled(gil::view(input));
-//     REQUIRE(result == expected);
-// }
+TEST_CASE("Scalar matrix to gray32f image", "[from_matrix]")
+{
+    using image_type = gil::gray32f_image_t;
+    using scalar_type = float;
+    test_scalar_matrix_type<scalar_type, image_type>();    
+}
