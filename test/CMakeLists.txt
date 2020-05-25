@@ -9,7 +9,7 @@ add_executable(test_target
     rm_cvref_test.cpp 
     pixel_to_vector_test.cpp 
     vector_to_pixel_test.cpp 
-    to_image_test.cpp 
+    from_matrix_test.cpp 
     as_matrix_test.cpp
     as_matrix_channeled_test.cpp
     true_channel_type_test.cpp)

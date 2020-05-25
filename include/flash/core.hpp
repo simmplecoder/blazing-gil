@@ -410,8 +410,10 @@ auto vector_to_pixel(const blaze::DenseVector<VT, TransposeFlag>& vector)
     return pixel;
 }
 
+namespace detail
+{
 template <typename ImageType, typename PixelType = typename ImageType::value_type, typename MT>
-ImageType to_image(const blaze::DenseMatrix<MT, blaze::rowMajor>& data)
+ImageType from_matrix(std::true_type /*is_vector*/, const blaze::DenseMatrix<MT, blaze::rowMajor>& data)
 {
     ImageType image((~data).rows(), (~data).columns());
     auto view = boost::gil::view(image);
@@ -423,6 +425,30 @@ ImageType to_image(const blaze::DenseMatrix<MT, blaze::rowMajor>& data)
     }
 
     return image;
+}
+
+template <typename ImageType, typename PixelType = typename ImageType::value_type, typename MT>
+ImageType from_matrix(std::false_type /*is not vector*/, const blaze::DenseMatrix<MT, blaze::rowMajor>& data)
+{
+    ImageType image((~data).rows(), (~data).columns());
+    auto view = boost::gil::view(image);
+
+    for (signed_size i = 0; i < view.height(); ++i)
+    {
+        for (signed_size j = 0; j < view.width(); ++j)
+        {
+            view(j, i)[0] = (~data)(i, j);
+        }
+    }
+
+    return image;
+}
+} // namespace detail
+
+template <typename ImageType, typename PixelType = typename ImageType::value_type, typename MT, bool SO>
+ImageType from_matrix(const blaze::DenseMatrix<MT, SO>& data)
+{
+    return detail::from_matrix<ImageType, PixelType>(blaze::IsDenseVector<blaze::UnderlyingElement_t<MT>>{}, data);
 }
 
 template <typename T, typename U>
