@@ -15,7 +15,6 @@
 #include <boost/gil/image_view.hpp>
 #include <boost/gil/pixel.hpp>
 #include <boost/gil/typedefs.hpp>
-#include <iostream>
 #include <limits>
 #include <stdexcept>
 #include <type_traits>
@@ -410,19 +409,71 @@ auto vector_to_pixel(const blaze::DenseVector<VT, TransposeFlag>& vector)
     return pixel;
 }
 
-template <typename ImageType, typename PixelType = typename ImageType::value_type, typename MT>
-ImageType to_image(const blaze::DenseMatrix<MT, blaze::rowMajor>& data)
+namespace detail
 {
-    ImageType image((~data).rows(), (~data).columns());
-    auto view = boost::gil::view(image);
-
+template <typename ImageView, typename PixelType = typename ImageView::value_type, typename MT>
+void from_matrix(std::true_type /*is_vector*/, ImageView view,
+                 const blaze::DenseMatrix<MT, blaze::rowMajor>& data)
+{
     for (signed_size i = 0; i < view.height(); ++i) {
         for (signed_size j = 0; j < view.width(); ++j) {
             view(j, i) = vector_to_pixel<PixelType>((~data)(i, j));
         }
     }
+}
 
-    return image;
+template <typename ImageView, typename PixelType = typename ImageView::value_type, typename MT>
+void from_matrix(std::false_type /*is not vector*/, ImageView view,
+                 const blaze::DenseMatrix<MT, blaze::rowMajor>& data)
+{
+    for (signed_size i = 0; i < view.height(); ++i) {
+        for (signed_size j = 0; j < view.width(); ++j) {
+            view(j, i)[0] = (~data)(i, j);
+        }
+    }
+}
+} // namespace detail
+
+/** \brief Converts a matrix into image with specified type
+
+    This function automatically detects if the matrix is made of
+    vectors or scalars, and does appropriate conversion from elements
+    to pixel values and returns the resulting image
+
+    \tparam ImageType The image type to convert into
+    \tparam PixelType The pixel type that resulting image will consist of
+    \tparam MT The concrete matrix type
+    \tparam SO Either rowMajor or columnMajor
+    \arg data The data to convert into image
+*/
+template <typename ImageType, typename PixelType = typename ImageType::value_type, typename MT,
+          bool SO>
+ImageType from_matrix(const blaze::DenseMatrix<MT, SO>& data)
+{
+    ImageType result((~data).columns(), (~data).rows());
+    auto view = boost::gil::view(result);
+    detail::from_matrix<decltype(view), PixelType>(
+        blaze::IsDenseVector<blaze::UnderlyingElement_t<MT>>{}, view, data);
+    return result;
+}
+
+/** \brief Converts the input matrix into image and writes into provided view
+
+    This function automatically detects if the matrix is made of
+    vectors or scalars, and does appropriate conversion from elements
+    to pixel values and writes into passed view
+
+    \tparam ImageView the type of ImageView to write image into
+    \tparam PixelType the type of pixels that the resulting image is made of
+    \tparam MT The concrete type of matrix
+    \tparam SO Either rowMajor or columnMajor
+*/
+template <typename ImageView, typename PixelType = typename ImageView::value_type, typename MT,
+          bool SO>
+void from_matrix(const blaze::DenseMatrix<MT, SO>& data, ImageView view)
+{
+    detail::from_matrix<decltype(view), PixelType>(
+        blaze::IsDenseVector<blaze::UnderlyingElement_t<MT>>{}, view, data);
 }
 
 template <typename T, typename U>
