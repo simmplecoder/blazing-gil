@@ -15,3 +15,6 @@ add_executable(test_target
     true_channel_type_test.cpp)
 target_link_libraries(test_target PRIVATE Catch2::Catch2 blazing-gil)
 catch_discover_tests(test_target)
+
+add_executable(compat pixel_compat_test.cpp)
+target_link_libraries(compat blazing-gil)
