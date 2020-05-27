@@ -1,13 +1,32 @@
 #include <blaze/Blaze.h>
-#include <blaze/math/TransposeFlag.h>
 #include <boost/gil/pixel.hpp>
 #include <functional>
 #include <type_traits>
 
 template <typename ChannelValue, typename Layout, bool IsRowVector = blaze::rowVector>
-struct pixel_vector : boost::gil::pixel<ChannelValue, Layout> {
+struct pixel_vector
+    : boost::gil::pixel<ChannelValue, Layout>,
+      blaze::DenseVector<pixel_vector<ChannelValue, Layout, IsRowVector>, IsRowVector> {
     using parent_t = boost::gil::pixel<ChannelValue, Layout>;
     using boost::gil::pixel<ChannelValue, Layout>::pixel;
+
+    using This = pixel_vector<ChannelValue, Layout, IsRowVector>;
+    using Basetype = blaze::DenseVector<This, IsRowVector>;
+    using ResultType = This;
+
+    using TransposeType = pixel_vector<ChannelValue, Layout, !IsRowVector>;
+
+    static constexpr bool simdEnabled = false;
+
+    using ElementType = ChannelValue;
+    using TagType = blaze::Group0;
+    using ReturnType = const ChannelValue&;
+    using CompositeType = const This&;
+
+    using Reference = ChannelValue&;
+    using ConstReference = const ChannelValue&;
+    using Pointer = ChannelValue*;
+    using ConstPointer = const ChannelValue*;
 
     // TODO: rule of 5
     template <typename OtherChannelValue>
@@ -19,6 +38,21 @@ struct pixel_vector : boost::gil::pixel<ChannelValue, Layout> {
     pixel_vector& operator=(const pixel_vector<OtherChannelValue, Layout> other)
     {
         parent_t::operator=(other);
+        return *this;
+    }
+
+    template <typename VT, bool TransposeFlag>
+    pixel_vector& operator=(const blaze::DenseVector<VT, TransposeFlag>& v)
+    {
+        if ((~v).size() != size()) {
+            throw std::invalid_argument(
+                "incoming vector has incompatible size with this pixel vector");
+        }
+
+        for (std::size_t i = 0; i < size(); ++i) {
+            (*this)[i] = (~v)[i];
+        }
+
         return *this;
     }
 
@@ -34,6 +68,22 @@ struct pixel_vector : boost::gil::pixel<ChannelValue, Layout> {
     }
 
   public:
+    std::size_t size() const { return boost::gil::num_channels<parent_t>{}; }
+
+    constexpr bool canAlias() const { return true; }
+
+    template <typename Other>
+    bool isAliased(const Other* alias) const noexcept
+    {
+        return static_cast<const void*>(this) == static_cast<const void*>(alias);
+    }
+
+    template <typename Other>
+    bool canAlias(const Other* alias) const noexcept
+    {
+        return static_cast<const void*>(this) == static_cast<const void*>(alias);
+    }
+
     // TODO: Add SFINAE for cases when parent_t::is_mutable is false
     template <typename OtherChannelValue, typename OtherLayout>
     pixel_vector& operator+=(pixel_vector<OtherChannelValue, OtherLayout> other)
@@ -112,7 +162,7 @@ namespace blaze
 {
 template <typename ChannelValue, typename Layout, bool IsRowVector>
 struct UnderlyingElement<pixel_vector<ChannelValue, Layout, IsRowVector>> {
-    using type = ChannelValue;
+    using Type = ChannelValue;
 };
 
 template <typename ChannelValue, typename Layout, bool IsRowVector>
