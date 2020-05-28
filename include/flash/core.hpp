@@ -15,6 +15,7 @@
 #include <boost/gil/image_view.hpp>
 #include <boost/gil/pixel.hpp>
 #include <boost/gil/typedefs.hpp>
+#include <functional>
 #include <limits>
 #include <stdexcept>
 #include <type_traits>
@@ -55,15 +56,6 @@ struct common_type<blaze::StaticVector<T, N>, blaze::StaticVector<U, N>> {
 namespace flash
 {
 
-using signed_size = std::ptrdiff_t;
-inline constexpr double pi = 3.14159265358979323846;
-
-template <typename T>
-using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
-
-template <typename T>
-using image_matrix = blaze::CustomMatrix<T, blaze::unaligned, blaze::unpadded>;
-
 /** \brief Used to bypass scoped_channel_type of GIL
 
     Some channel types in GIL, like `gil::float32_t` and `gil::float64_t` have a different type
@@ -89,6 +81,202 @@ struct true_channel_type<boost::gil::float64_t> {
 
 template <typename ChannelType>
 using true_channel_type_t = typename true_channel_type<ChannelType>::type;
+
+template <typename Pixel, bool IsRowVector = blaze::rowVector>
+struct pixel_vector {
+};
+
+template <typename ChannelValue, typename Layout, bool IsRowVector>
+struct pixel_vector<boost::gil::pixel<ChannelValue, Layout>, IsRowVector>
+    : boost::gil::pixel<true_channel_type_t<ChannelValue>, Layout>,
+      blaze::DenseVector<pixel_vector<boost::gil::pixel<ChannelValue, Layout>, IsRowVector>,
+                         IsRowVector> {
+    using parent_t = boost::gil::pixel<ChannelValue, Layout>;
+    using boost::gil::pixel<ChannelValue, Layout>::pixel;
+
+    using This = pixel_vector<boost::gil::pixel<ChannelValue, Layout>, IsRowVector>;
+    static_assert(sizeof(parent_t) == sizeof(This));
+    using Basetype = blaze::DenseVector<This, IsRowVector>;
+    using ResultType = This;
+
+    using TransposeType = pixel_vector<boost::gil::pixel<ChannelValue, Layout>, !IsRowVector>;
+
+    static constexpr bool simdEnabled = false;
+
+    using ElementType = ChannelValue;
+    using TagType = blaze::Group0;
+    using ReturnType = const ChannelValue&;
+    using CompositeType = const This&;
+
+    using Reference = ChannelValue&;
+    using ConstReference = const ChannelValue&;
+    using Pointer = ChannelValue*;
+    using ConstPointer = const ChannelValue*;
+
+    // TODO: rule of 5
+    template <typename OtherPixel, bool AnotherIsRowVector>
+    pixel_vector(pixel_vector<OtherPixel, AnotherIsRowVector> other) : parent_t(other)
+    {
+    }
+
+    template <typename OtherPixel>
+    pixel_vector& operator=(const pixel_vector<OtherPixel, IsRowVector> other)
+    {
+        parent_t::operator=(other);
+        return *this;
+    }
+
+    template <typename VT>
+    pixel_vector& operator=(const blaze::DenseVector<VT, IsRowVector>& v)
+    {
+        if ((~v).size() != size()) {
+            throw std::invalid_argument(
+                "incoming vector has incompatible size with this pixel vector");
+        }
+
+        for (std::size_t i = 0; i < size(); ++i) {
+            (*this)[i] = (~v)[i];
+        }
+
+        return *this;
+    }
+
+  private:
+    template <typename OtherPixel, typename Op>
+    void perform_op(pixel_vector<OtherPixel, IsRowVector> p, Op op)
+    {
+        constexpr auto num_channels = boost::gil::num_channels<parent_t>{};
+        static_assert(num_channels == boost::gil::num_channels<OtherPixel>{});
+        auto& current = *this;
+        for (std::ptrdiff_t i = 0; i < num_channels; ++i) {
+            current[i] = op(current[i], p[i]);
+        }
+    }
+
+  public:
+    std::size_t size() const { return boost::gil::num_channels<parent_t>{}; }
+
+    constexpr bool canAlias() const { return true; }
+
+    template <typename Other>
+    bool isAliased(const Other* alias) const noexcept
+    {
+        return static_cast<const void*>(this) == static_cast<const void*>(alias);
+    }
+
+    template <typename Other>
+    bool canAlias(const Other* alias) const noexcept
+    {
+        return static_cast<const void*>(this) == static_cast<const void*>(alias);
+    }
+
+    // TODO: Add SFINAE for cases when parent_t::is_mutable is false
+    template <typename OtherPixel>
+    pixel_vector& operator+=(pixel_vector<OtherPixel, IsRowVector> other)
+    {
+        perform_op(other, std::plus<>{});
+        return *this;
+    }
+
+    template <typename OtherPixel>
+    pixel_vector& operator-=(pixel_vector<OtherPixel, IsRowVector> other)
+    {
+        perform_op(other, std::minus<>{});
+        return *this;
+    }
+
+    template <typename OtherPixel>
+    pixel_vector& operator*=(pixel_vector<OtherPixel, IsRowVector> other)
+    {
+        perform_op(other, std::multiplies<>{});
+        return *this;
+    }
+
+    template <typename OtherPixel>
+    pixel_vector& operator/=(pixel_vector<OtherPixel, IsRowVector> other)
+    {
+        perform_op(other, std::divides<>{});
+        return *this;
+    }
+};
+
+template <typename ChannelValue1, typename ChannelValue2, typename Layout, bool IsRowVector>
+inline pixel_vector<boost::gil::pixel<std::common_type_t<ChannelValue1, ChannelValue2>, Layout>,
+                    IsRowVector>
+operator+(pixel_vector<boost::gil::pixel<ChannelValue1, Layout>, IsRowVector> lhs,
+          pixel_vector<boost::gil::pixel<ChannelValue2, Layout>, IsRowVector> rhs)
+{
+    lhs += rhs;
+    return lhs;
+}
+
+template <typename ChannelValue1, typename ChannelValue2, typename Layout, bool IsRowVector>
+inline pixel_vector<boost::gil::pixel<std::common_type_t<ChannelValue1, ChannelValue2>, Layout>,
+                    IsRowVector>
+operator-(pixel_vector<boost::gil::pixel<ChannelValue1, Layout>, IsRowVector> lhs,
+          pixel_vector<boost::gil::pixel<ChannelValue2, Layout>, IsRowVector> rhs)
+{
+    lhs -= rhs;
+    return lhs;
+}
+
+template <typename ChannelValue1, typename ChannelValue2, typename Layout, bool IsRowVector>
+inline pixel_vector<boost::gil::pixel<std::common_type_t<ChannelValue1, ChannelValue2>, Layout>,
+                    IsRowVector>
+operator*(pixel_vector<boost::gil::pixel<ChannelValue1, Layout>, IsRowVector> lhs,
+          pixel_vector<boost::gil::pixel<ChannelValue2, Layout>, IsRowVector> rhs)
+{
+    lhs *= rhs;
+    return lhs;
+}
+
+template <typename ChannelValue1, typename ChannelValue2, typename Layout, bool IsRowVector>
+inline pixel_vector<boost::gil::pixel<std::common_type_t<ChannelValue1, ChannelValue2>, Layout>,
+                    IsRowVector>
+operator/(pixel_vector<boost::gil::pixel<ChannelValue1, Layout>, IsRowVector> lhs,
+          pixel_vector<boost::gil::pixel<ChannelValue2, Layout>, IsRowVector> rhs)
+{
+    lhs /= rhs;
+    return lhs;
+}
+
+template <typename Pixel, bool IsRowVector = blaze::rowVector>
+struct pixel_vector_type;
+
+template <typename ChannelValue, typename Layout, bool IsRowVector>
+struct pixel_vector_type<boost::gil::pixel<ChannelValue, Layout>, IsRowVector> {
+    using type = pixel_vector<boost::gil::pixel<ChannelValue, Layout>, IsRowVector>;
+};
+
+using signed_size = std::ptrdiff_t;
+inline constexpr double pi = 3.14159265358979323846;
+
+template <typename T>
+using remove_cvref_t = std::remove_cv_t<std::remove_reference_t<T>>;
+
+template <typename T>
+using image_matrix = blaze::CustomMatrix<T, blaze::unaligned, blaze::unpadded>;
+
+template <typename Pixel>
+struct corresponding_vector_type {
+    using type =
+        blaze::StaticVector<true_channel_type_t<typename boost::gil::channel_type<Pixel>::type>,
+                            boost::gil::num_channels<Pixel>{}, blaze::rowMajor, blaze::unaligned,
+                            blaze::unpadded>;
+};
+
+template <typename Pixel>
+struct is_layout_compatible {
+    static constexpr bool value =
+        sizeof(Pixel) == sizeof(typename corresponding_vector_type<Pixel>::type);
+};
+
+template <typename Pixel, bool IsRowVector = blaze::rowVector>
+struct layout_compatible_vector {
+    using type = std::conditional_t<is_layout_compatible<Pixel>::value,
+                                    typename corresponding_vector_type<Pixel>::type,
+                                    pixel_vector<Pixel, IsRowVector>>;
+};
 
 /** \brief Extract `channel`th value from each pixel in `view` and writes into `result`
 
@@ -259,11 +447,12 @@ auto as_matrix_channeled(ImageView source)
     using pixel_t = typename ImageView::value_type;
     using channel_t = typename boost::gil::channel_type<ImageView>::type;
     constexpr auto num_channels = boost::gil::num_channels<ImageView>{};
-    using element_type = blaze::StaticVector<true_channel_type_t<channel_t>,
-                                             num_channels,
-                                             blaze::rowMajor,
-                                             IsPixelAligned,
-                                             IsPixelPadded>;
+    // using element_type = blaze::StaticVector<true_channel_type_t<channel_t>,
+    //                                          num_channels,
+    //                                          blaze::rowMajor,
+    //                                          IsPixelAligned,
+    //                                          IsPixelPadded>;
+    using element_type = typename flash::layout_compatible_vector<pixel_t>::type;
     static_assert(sizeof(pixel_t) == sizeof(element_type),
                   "The function is made to believe that pixel and corresponding vector types are"
                   "layout compatible, but they are not");
@@ -505,3 +694,15 @@ blaze::DynamicMatrix<T> pad(const blaze::DynamicMatrix<T>& source, std::size_t p
     return result;
 }
 } // namespace flash
+
+namespace blaze
+{
+template <typename Pixel, bool IsRowVector>
+struct UnderlyingElement<flash::pixel_vector<Pixel, IsRowVector>> {
+    using Type = typename boost::gil::channel_type<Pixel>::type;
+};
+
+template <typename Pixel, bool IsRowVector>
+struct IsDenseVector<flash::pixel_vector<Pixel, IsRowVector>> : std::true_type {
+};
+} // namespace blaze
