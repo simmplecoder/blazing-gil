@@ -95,7 +95,6 @@ struct pixel_vector<boost::gil::pixel<ChannelValue, Layout>, IsRowVector>
     using boost::gil::pixel<ChannelValue, Layout>::pixel;
 
     using This = pixel_vector<boost::gil::pixel<ChannelValue, Layout>, IsRowVector>;
-    static_assert(sizeof(parent_t) == sizeof(This));
     using Basetype = blaze::DenseVector<This, IsRowVector>;
     using ResultType = This;
 
@@ -238,6 +237,47 @@ operator/(pixel_vector<boost::gil::pixel<ChannelValue1, Layout>, IsRowVector> lh
 {
     lhs /= rhs;
     return lhs;
+}
+
+template <typename ChannelValue1, typename ChannelValue2, typename Layout, bool IsRowVector>
+inline bool operator==(pixel_vector<boost::gil::pixel<ChannelValue1, Layout>, IsRowVector> lhs,
+          pixel_vector<boost::gil::pixel<ChannelValue2, Layout>, IsRowVector> rhs)
+{
+    for (std::size_t i = 0; i < lhs.size(); ++i)
+    {
+        if (lhs[i] != rhs[i])
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+template <typename ChannelValue1, typename ChannelValue2, typename Layout, bool IsRowVector>
+inline bool operator!=(pixel_vector<boost::gil::pixel<ChannelValue1, Layout>, IsRowVector> lhs,
+          pixel_vector<boost::gil::pixel<ChannelValue2, Layout>, IsRowVector> rhs)
+{
+    return !(lhs == rhs);
+}
+
+template <typename Pixel, bool IsRowVector, typename Scalar>
+inline bool operator==(const pixel_vector<Pixel, IsRowVector>& v, Scalar s)
+{
+    for (std::size_t i = 0; i < v.size(); ++i)
+    {
+        if (v[i] != s)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+template <typename Pixel, bool IsRowVector, typename Scalar>
+inline bool operator!=(const pixel_vector<Pixel, IsRowVector>& v, Scalar s)
+{
+    return !(v == s);
 }
 
 template <typename Pixel, bool IsRowVector = blaze::rowVector>
