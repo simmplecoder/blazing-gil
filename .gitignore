@@ -7,3 +7,4 @@ doc/docs_output
 .idea/
 cmake-build-debug/
 cmake-build-release/
+cmake/blazing-gilConfig.cmake
