@@ -4,7 +4,7 @@ project(blazing-gil)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 
-option(use_conan "Use Conan to install dependencies")
+option(USE_CONAN "Use Conan to install dependencies")
 # option(blas_lib_name "BLAS library to use as backend for Blaze. Only Intel MKL is supported for now. The specified library must be the one Blaze is configured for" "MKL")
 set(blas_lib_name "MKL" CACHE STRING "BLAS library to use as backend for Blaze. Only Intel MKL is supported for now. The specified library must be the one Blaze is configured for.")
 
@@ -78,29 +78,21 @@ else()
       TIFF::TIFF
       Boost::headers
       Boost::filesystem)
-  if (TIFF_LIBRARY)
-    set(TIFFXX_NAMES tiffxx)
-    foreach(name ${TIFFXX_NAMES})
-      list(APPEND TIFFXX_NAMES_DEBUG "${name}d")
-    endforeach()
-    find_library(TIFFXX_LIBRARY_RELEASE NAMES ${TIFFXX_NAMES})
-    find_library(TIFFXX_LIBRARY_DEBUG NAMES ${TIFFXX_NAMES_DEBUG})
-    find_path(TIFFXX_INCLUDE_DIR NAMES tiffio.hxx)
-    include(SelectLibraryConfigurations)
-    select_library_configurations(TIFFXX)
-    mark_as_advanced(TIFFXX_LIBRARY_RELEASE TIFFXX_LIBRARY_DEBUG)
-    include(FindPackageHandleStandardArgs)
-    find_package_handle_standard_args(TIFFXX REQUIRED_VARS TIFFXX_LIBRARY TIFFXX_INCLUDE_DIR)
-    target_include_directories(GIL INTERFACE ${TIFFXX_INCLUDE_DIR})
-    target_link_libraries(GIL INTERFACE ${TIFFXX_LIBRARY})
-  endif()
 endif()
 
 ### create the library target - blazing-gil
 add_library(blazing-gil INTERFACE)
-target_include_directories(blazing-gil INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(blazing-gil INTERFACE GIL blas_library)
+target_include_directories(blazing-gil INTERFACE 
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+target_link_libraries(blazing-gil INTERFACE 
+  GIL
+  blas_library)
 
+add_library(blazing-gil::blazing-gil ALIAS blazing-gil)
+
+
+set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY ON)
 
 ### dependencies for examples
 add_subdirectory(example)
@@ -112,3 +104,24 @@ endif()
 if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTING)
   add_subdirectory(test)
 endif()
+
+include(GNUInstallDirs)
+
+install(TARGETS blazing-gil GIL blas_library
+  EXPORT blazing-gilTargets
+  INCLUDES DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+
+install(
+  DIRECTORY
+    include/
+  DESTINATION
+    "${CMAKE_INSTALL_INCLUDEDIR}")
+
+install(EXPORT blazing-gilTargets
+  NAMESPACE blazing-gil::
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/blazing-gil")
+
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/blazing-gilConfig.cmake.in" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/blazing-gilConfig.cmake" @ONLY)
+install(
+    FILES cmake/blazing-gilConfig.cmake
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/blazing-gil")
