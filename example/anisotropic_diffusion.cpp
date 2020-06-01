@@ -38,17 +38,24 @@ int main(int argc, char* argv[])
     gil::rgb8_image_t input;
     gil::read_image(input_file, input, gil::png_tag{});
 
-    gil::gray8_image_t gray(input.dimensions());
-    gil::copy_and_convert_pixels(gil::view(input), gil::view(gray));
+    auto view = gil::view(input);
+    auto mat = flash::to_matrix_channeled(view);
+    blaze::DynamicMatrix<blaze::StaticVector<std::uint16_t, 3>> extended = mat;
+    auto diffused = flash::remap_to_channeled<std::uint8_t>(
+        flash::anisotropic_diffusion(extended, kappa, iteration_count));
 
-    auto image = flash::to_matrix(gil::view(gray));
-    blaze::DynamicMatrix<std::int16_t> mat(image);
-    auto diffused = flash::anisotropic_diffusion(mat, kappa, iteration_count);
+    auto image = flash::from_matrix<gil::rgb8_image_t>(diffused);
+    auto diffused_min = blaze::StaticVector<std::uint16_t, 3>(flash::channelwise_minimum(diffused));
+    auto diffused_max = blaze::StaticVector<std::uint16_t, 3>(flash::channelwise_maximum(diffused));
 
-    image = flash::remap_to<unsigned char>(diffused);
+    std::cout << "diffused min: (" << diffused_min[0] << ", " << diffused_min[1] << ", "
+              << diffused_min[2] << ")\n"
+              << "diffused max: (" << diffused_max[0] << ", " << diffused_max[1] << ", "
+              << diffused_max[2] << ")\n";
 
-    std::cout << "Gradient range: " << blaze::max(diffused) << ' ' << blaze::min(diffused) << '\n'
-              << "Final gray image range: " << static_cast<int>(blaze::max(image)) << ' '
-              << static_cast<int>(blaze::min(image)) << '\n';
-    gil::write_view(output_file, gil::view(gray), gil::png_tag{});
+    //    std::cout << "Gradient range: " << blaze::max(diffused) << ' ' << blaze::min(diffused) <<
+    //    '\n'
+    //              << "Final gray image range: " << static_cast<int>(blaze::max(image)) << ' '
+    //              << static_cast<int>(blaze::min(image)) << '\n';
+    gil::write_view(output_file, gil::view(image), gil::png_tag{});
 }

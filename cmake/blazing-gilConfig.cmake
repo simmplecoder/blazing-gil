@@ -1,0 +1,18 @@
+unset(blazingGilExtraArgs)
+if(${CMAKE_FIND_PACKAGE_NAME}_FIND_QUIETLY)
+    list(APPEND blazingGilExtraArgs QUIET)
+endif()
+if(${CMAKE_FIND_PACKAGE_NAME}_FIND_REQUIRED)
+    list(APPEND blazingGilExtraArgs REQUIRED)
+endif()
+find_package(Boost COMPONENTS filesystem ${blazingGilExtraArgs})
+find_package(blaze  ${blazingGilExtraArgs})
+
+include(${CMAKE_CURRENT_LIST_DIR}/blazing-gilTargets.cmake)
+
+set(USE_CONAN 1)
+if (NOT USE_CONAN)
+    find_package(JPEG ${blazingGilExtraArgs})
+    find_package(PNG ${blazingGilExtraArgs})
+    find_package(TIFF ${blazingGilExtraArgs})
+endif()
