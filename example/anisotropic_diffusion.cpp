@@ -1,3 +1,4 @@
+#include <blaze/math/typetraits/UnderlyingElement.h>
 #include <blaze/util/algorithms/Max.h>
 #include <boost/gil/algorithm.hpp>
 #include <boost/gil/extension/io/png.hpp>
@@ -40,18 +41,17 @@ int main(int argc, char* argv[])
 
     auto view = gil::view(input);
     auto mat = flash::to_matrix_channeled(view);
-    blaze::DynamicMatrix<blaze::StaticVector<std::uint16_t, 3>> extended = mat;
-    auto diffused = flash::remap_to_channeled<std::uint8_t>(
-        flash::anisotropic_diffusion(extended, kappa, iteration_count));
+    auto diffused = flash::anisotropic_diffusion(mat, kappa, iteration_count);
+    auto remapped = flash::remap_to_channeled<std::uint8_t>(diffused);
 
-    auto image = flash::from_matrix<gil::rgb8_image_t>(diffused);
-    auto diffused_min = blaze::StaticVector<std::uint16_t, 3>(flash::channelwise_minimum(diffused));
-    auto diffused_max = blaze::StaticVector<std::uint16_t, 3>(flash::channelwise_maximum(diffused));
+    auto image = flash::from_matrix<gil::rgb8_image_t>(remapped);
+    auto diffused_min =
+        blaze::UnderlyingElement_t<decltype(diffused)>(flash::channelwise_minimum(diffused));
+    auto diffused_max =
+        blaze::UnderlyingElement_t<decltype(diffused)>(flash::channelwise_maximum(diffused));
 
-    std::cout << "diffused min: (" << diffused_min[0] << ", " << diffused_min[1] << ", "
-              << diffused_min[2] << ")\n"
-              << "diffused max: (" << diffused_max[0] << ", " << diffused_max[1] << ", "
-              << diffused_max[2] << ")\n";
+    std::cout << "diffused min: " << diffused_min << '\n'
+              << "diffused max: " << diffused_max << '\n';
 
     //    std::cout << "Gradient range: " << blaze::max(diffused) << ' ' << blaze::min(diffused) <<
     //    '\n'

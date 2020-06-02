@@ -2,11 +2,13 @@
 #define BLAZING_GIL_NUMERIC_HPP
 
 #include <blaze/Blaze.h>
+#include <blaze/math/typetraits/IsVector.h>
 #include <flash/convolution.hpp>
 
 #include <algorithm>
 #include <cstdint>
 #include <iostream>
+#include <type_traits>
 
 // temporary fix for mapping of matrix with static vector as elements
 // https://bitbucket.org/blaze-lib/blaze/issues/344/incorrect-behavior-of-element-type
@@ -103,12 +105,15 @@ template <typename T>
 struct identify_type;
 
 template <typename MT, bool StorageOrder>
-blaze::DynamicMatrix<blaze::UnderlyingElement_t<MT>, StorageOrder>
-anisotropic_diffusion(const blaze::DenseMatrix<MT, StorageOrder>& input, double kappa,
-                      std::uint64_t iteration_count)
+auto anisotropic_diffusion(const blaze::DenseMatrix<MT, StorageOrder>& input, double kappa,
+                           std::uint64_t iteration_count)
 {
     using element_type = blaze::UnderlyingElement_t<MT>;
-    using matrix_type = blaze::DynamicMatrix<element_type, StorageOrder>;
+    using output_element_type =
+        std::conditional_t<blaze::IsVector_v<element_type>,
+                           blaze::StaticVector<double, element_type::size()>,
+                           double>;
+    using matrix_type = blaze::DynamicMatrix<output_element_type, StorageOrder>;
     matrix_type output(input);
     std::size_t output_area_start[2] = {1, 1};
     std::size_t output_area_dims[2] = {output.rows() - 2, output.columns() - 2};
@@ -120,45 +125,46 @@ anisotropic_diffusion(const blaze::DenseMatrix<MT, StorageOrder>& input, double 
                                 output_area_dims[1]);
     };
     auto output_area = region(0, 0);
-    for (std::uint64_t i = 0; i < iteration_count; ++i)
-    {
-        auto nabla = blaze::evaluate(blaze::generate(output_area.rows(), output_area.columns(), [&output](std::size_t i, std::size_t j) {
-            auto real_i = i + 1;
-            auto real_j = j + 1;
-            return blaze::StaticVector<element_type, 8>{
-                output(real_i - 1, real_j) - output(real_i, real_j),
-                output(real_i + 1, real_j) - output(real_i, real_j),
-                output(real_i, real_j + 1) - output(real_i, real_j),
-                output(real_i, real_j - 1) - output(real_i, real_j),
-                output(real_i - 1, real_j + 1) - output(real_i, real_j),
-                output(real_i - 1, real_j - 1) - output(real_i, real_j),
-                output(real_i + 1, real_j + 1) - output(real_i, real_j),
-                output(real_i + 1, real_j - 1) - output(real_i, real_j)
-            };
-        }));
+    for (std::uint64_t i = 0; i < iteration_count; ++i) {
+        auto nabla = blaze::evaluate(blaze::generate(
+            output_area.rows(), output_area.columns(), [&output](std::size_t i, std::size_t j) {
+                auto real_i = i + 1;
+                auto real_j = j + 1;
+                return blaze::StaticVector<output_element_type, 8>{
+                    output(real_i - 1, real_j) - output(real_i, real_j),
+                    output(real_i + 1, real_j) - output(real_i, real_j),
+                    output(real_i, real_j + 1) - output(real_i, real_j),
+                    output(real_i, real_j - 1) - output(real_i, real_j),
+                    output(real_i - 1, real_j + 1) - output(real_i, real_j),
+                    output(real_i - 1, real_j - 1) - output(real_i, real_j),
+                    output(real_i + 1, real_j + 1) - output(real_i, real_j),
+                    output(real_i + 1, real_j - 1) - output(real_i, real_j)};
+            }));
         auto c = blaze::map(nabla, [kappa](const auto& element) {
-          auto c_element = blaze::evaluate(element / kappa);
-          auto half = 0.5;
-          return blaze::StaticVector<element_type, 8>{
-              blaze::exp(-c_element[0] * c_element[0]),
-              blaze::exp(-c_element[1] * c_element[1]),
-              blaze::exp(-c_element[2] * c_element[2]),
-              blaze::exp(-c_element[3] * c_element[3]),
-              blaze::exp(-c_element[4] * c_element[4]) * half,
-              blaze::exp(-c_element[5] * c_element[5]) * half,
-              blaze::exp(-c_element[6] * c_element[6]) * half,
-              blaze::exp(-c_element[7] * c_element[7]) * half,
-          };
+            auto c_element = blaze::evaluate(element / kappa);
+            auto half = 0.5;
+            return blaze::StaticVector<output_element_type, 8>{
+                blaze::exp(-c_element[0] * c_element[0]),
+                blaze::exp(-c_element[1] * c_element[1]),
+                blaze::exp(-c_element[2] * c_element[2]),
+                blaze::exp(-c_element[3] * c_element[3]),
+                blaze::exp(-c_element[4] * c_element[4]) * half,
+                blaze::exp(-c_element[5] * c_element[5]) * half,
+                blaze::exp(-c_element[6] * c_element[6]) * half,
+                blaze::exp(-c_element[7] * c_element[7]) * half,
+            };
         });
         nabla %= c;
-        auto sum = blaze::evaluate(blaze::map(nabla, [](auto element) {return blaze::sum(element) * 1.0 / 7;}));
+        auto sum = blaze::evaluate(
+            blaze::map(nabla, [](auto element) { return blaze::sum(element) * 1.0 / 7; }));
         output_area += sum;
     }
 
     return output;
 }
 //
-//blaze::DynamicMatrix<double> anisotropic_diffusion(const blaze::DynamicMatrix<std::uint8_t>& input,
+// blaze::DynamicMatrix<double> anisotropic_diffusion(const blaze::DynamicMatrix<std::uint8_t>&
+// input,
 //                                                   double kappa, std::uint64_t iteration_count)
 //{
 //    using matrix_type = blaze::DynamicMatrix<double>;
