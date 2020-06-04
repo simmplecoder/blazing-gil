@@ -37,7 +37,20 @@ install:
   - mkdir build && cd build
   - $CMAKE_PATH ..
   - sudo make install
-  - cd ../../..
+  - cd ../..
+#inside 3rdparty
+  - git clone https://github.com/CLIUtils/CLI11.git
+  - cd CLI11  
+  - git checkout v1.9.0
+  - rm -r examples # do not build examples
+  - mkdir build && cd build
+  - $CMAKE_PATH -DBUILD_TESTING=OFF ..
+  - sudo make install
+  - cd ../..
+#inside 3rdparty
+# finished installing dependencies, configuring project
+  - cd $HOME
+#inside $HOME
   - ls
   - mkdir build && cd build
   - $CMAKE_PATH -Dblas_lib_name="" ..
