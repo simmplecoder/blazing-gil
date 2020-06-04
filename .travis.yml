@@ -49,7 +49,7 @@ install:
   - cd ../..
 #inside 3rdparty
 # finished installing dependencies, configuring project
-  - cd $HOME
+  - cd ../
 #inside $HOME
   - ls
   - mkdir build && cd build
