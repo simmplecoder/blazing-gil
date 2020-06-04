@@ -18,8 +18,6 @@ install:
 # inside $HOME
   - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
   - sudo apt -qy install $CXX $CC libpng-dev libjpeg-dev libtiff-dev libraw-dev libblas-dev liblapack-dev
-  - sudo snap install cmake --classic
-  - $CMAKE_PATH --version
   - mkdir 3rdparty
   - cd 3rdparty
 #inside 3rdparty
@@ -42,4 +40,4 @@ install:
   - cd ../../..
   - ls
   - mkdir build && cd build
-  - $CMAKE_PATH ..
+  - $CMAKE_PATH -Dblas_lib_name="" ..
