@@ -4,7 +4,7 @@ dist: bionic
 install:
   - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
   - sudo apt -y install g++-8 g++-9
-  - sudo snap install cmake
+  - sudo snap install cmake --classic
   - mkdir 3rdparty
   - cd 3rdparty
 #inside 3rdparty
@@ -14,6 +14,15 @@ install:
 #inside 3rdparty/boost_1_73_0
   - ./bootstrap.sh
   - ./b2 --with-filesystem
+  - export BOOST_ROOT=$PWD
+  - echo $BOOST_ROOT
   - cd ../
 #inside 3rdparty
   - git clone https://bitbucket.org/blaze-lib/blaze.git
+  - cd blaze
+#inside 3rdparty/blaze
+  - mkdir build
+  - cmake ..
+  - sudo make install
+  - cd ../..
+  - ls
