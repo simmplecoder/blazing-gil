@@ -2,12 +2,12 @@ language: cpp
 dist: bionic
 
 env:
-  - CXX=g++-7 CC=gcc-7 SHOULD_USE_CONAN=ON
-  - CXX=g++-7 CC=gcc-7 SHOULD_USE_CONAN=OFF  
-  - CXX=g++-8 CC=gcc-8 SHOULD_USE_CONAN=ON
-  - CXX=g++-8 CC=gcc-8 SHOULD_USE_CONAN=OFF
-  - CXX=g++-9 CC=gcc-9 SHOULD_USE_CONAN=ON
-  - CXX=g++-9 CC=gcc-9 SHOULD_USE_CONAN=OFF  
+  - CXX=g++-7 CC=gcc-7 SHOULD_USE_CONAN=-DUSE_CONAN=ON
+  - CXX=g++-7 CC=gcc-7 SHOULD_USE_CONAN=-DUSE_CONAN=OFF  
+  - CXX=g++-8 CC=gcc-8 SHOULD_USE_CONAN=-DUSE_CONAN=ON
+  - CXX=g++-8 CC=gcc-8 SHOULD_USE_CONAN=-DUSE_CONAN=OFF
+  - CXX=g++-9 CC=gcc-9 SHOULD_USE_CONAN=-DUSE_CONAN=ON
+  - CXX=g++-9 CC=gcc-9 SHOULD_USE_CONAN=-DUSE_CONAN=OFF  
 
 install:
   - sudo apt -y remove cmake
@@ -21,7 +21,8 @@ install:
 # inside $HOME
   - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
   - sudo apt -qy install $CXX $CC libpng-dev libjpeg-dev libtiff-dev libraw-dev libblas-dev liblapack-dev python3-pip python3-setuptools
-  - sudo -H pip3 install wheel conan
+  - sudo -H pip3 install wheel
+  - sudo -H pip3 install conan
   - conan --version
   - mkdir 3rdparty
   - cd 3rdparty
@@ -66,7 +67,7 @@ install:
 #inside project directory
   - ls
   - mkdir build && cd build
-  - $CMAKE_PATH -DCMAKE_BUILD_TYPE=Release -DUSE_CONAN=$SHOULD_USE_CONAN -Dblas_lib_name="" -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_C_COMPILER=$CC ..
+  - $CMAKE_PATH -DCMAKE_BUILD_TYPE=Release $SHOULD_USE_CONAN -Dblas_lib_name="" -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_C_COMPILER=$CC ..
 
 script:
   - make test_target && make test
