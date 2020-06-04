@@ -12,14 +12,14 @@ install:
   - mkdir new-cmake && cd new-cmake
   - wget https://github.com/Kitware/CMake/releases/download/v3.17.3/cmake-3.17.3-Linux-x86_64.tar.gz
   - tar -zxf cmake-3.17.3-Linux-x86_64.tar.gz
-  - export PATH=$PATH:$PWD/cmake-3.17.3-Linux-x86_64/bin
-  - cmake --version
+  - export CMAKE_PATH=$PWD/cmake-3.17.3-Linux-x86_64/bin/cmake
+  - $CMAKE_PATH --version
   - cd ..
 # inside $HOME
   - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
   - sudo apt -qy install $CXX $CC libpng-dev libjpeg-dev libtiff-dev libraw-dev libblas-dev liblapack-dev
   - sudo snap install cmake --classic
-  - cmake --version
+  - $CMAKE_PATH --version
   - mkdir 3rdparty
   - cd 3rdparty
 #inside 3rdparty
@@ -37,9 +37,9 @@ install:
   - cd blaze
 #inside 3rdparty/blaze
   - mkdir build && cd build
-  - cmake ..
+  - $CMAKE_PATH ..
   - sudo make install
   - cd ../../..
   - ls
   - mkdir build && cd build
-  - cmake ..
+  - $CMAKE_PATH ..
