@@ -20,7 +20,7 @@ install:
   - cd ..
 # inside $HOME
   - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-  - sudo apt -qy install $CXX $CC libpng-dev libjpeg-dev libtiff-dev libraw-dev libblas-dev liblapack-dev python3-pip
+  - sudo apt -qy install $CXX $CC libpng-dev libjpeg-dev libtiff-dev libraw-dev libblas-dev liblapack-dev python3-pip python3-setuptools
   - sudo -H pip3 install conan
   - conan --version
   - mkdir 3rdparty
