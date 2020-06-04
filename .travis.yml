@@ -70,4 +70,5 @@ install:
   - $CMAKE_PATH -DCMAKE_BUILD_TYPE=Release $SHOULD_USE_CONAN -Dblas_lib_name="" -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_C_COMPILER=$CC ..
 
 script:
-  - make test_target && make test
+  - make test_target
+  - ./bin/test_target
