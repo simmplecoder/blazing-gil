@@ -1,6 +1,10 @@
 language: cpp
+dist: bionic
 
 install:
+  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+  - sudo apt -y install g++-8 g++-9
+  - sudo snap install cmake
   - mkdir 3rdparty
   - cd 3rdparty
 #inside 3rdparty
@@ -12,7 +16,4 @@ install:
   - ./b2 --with-filesystem
   - cd ../
 #inside 3rdparty
-  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-  - sudo apt -y install g++-8 g++-9
-  - sudo snap install cmake
   - git clone https://bitbucket.org/blaze-lib/blaze.git
