@@ -61,4 +61,7 @@ install:
 #inside project directory
   - ls
   - mkdir build && cd build
-  - $CMAKE_PATH -Dblas_lib_name="" ..
+  - $CMAKE_PATH -Dblas_lib_name="" -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_C_COMPILER=$CC ..
+
+script:
+  - make test_target && make test
