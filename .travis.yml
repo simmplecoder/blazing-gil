@@ -71,4 +71,7 @@ install:
 
 script:
   - make test_target
+  - ls
+  - ls test  
+  - ls bin
   - ./bin/test_target
