@@ -1,9 +1,14 @@
 language: cpp
 dist: bionic
 
+env:
+  -CXX=g++-7 CC=gcc-7
+  -CXX=g++-8 CC=gcc-8
+  -CXX=g++-9 CC=gcc-9
+
 install:
   - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-  - sudo apt -qy install g++-8 g++-9 libpng-dev libjpeg-dev libtiff-dev libraw-dev libblas-dev
+  - sudo apt -qy install $CXX $CC libpng-dev libjpeg-dev libtiff-dev libraw-dev libblas-dev liblapack-dev
   - sudo snap install cmake --classic
   - mkdir 3rdparty
   - cd 3rdparty
