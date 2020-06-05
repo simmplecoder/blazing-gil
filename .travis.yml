@@ -1,0 +1,78 @@
+language: cpp
+dist: bionic
+
+env:
+  - CXX=g++-7 CC=gcc-7 SHOULD_USE_CONAN=ON
+  - CXX=g++-7 CC=gcc-7 SHOULD_USE_CONAN=OFF  
+  - CXX=g++-8 CC=gcc-8 SHOULD_USE_CONAN=ON
+  - CXX=g++-8 CC=gcc-8 SHOULD_USE_CONAN=OFF
+  - CXX=g++-9 CC=gcc-9 SHOULD_USE_CONAN=ON
+  - CXX=g++-9 CC=gcc-9 SHOULD_USE_CONAN=OFF  
+  - CXX=g++-10 CC=gcc-10 SHOULD_USE_CONAN=ON
+  - CXX=g++-10 CC=gcc-10 SHOULD_USE_CONAN=OFF    
+
+install:
+  - sudo apt -y remove cmake
+#inside cmake
+  - mkdir new-cmake && cd new-cmake
+  - wget https://github.com/Kitware/CMake/releases/download/v3.17.3/cmake-3.17.3-Linux-x86_64.tar.gz
+  - tar -zxf cmake-3.17.3-Linux-x86_64.tar.gz
+  - export CMAKE_PATH=$PWD/cmake-3.17.3-Linux-x86_64/bin/cmake
+  - export CTEST_PATH=$PWD/cmake-3.17.3-Linux-x86_64/bin/ctest
+  - $CMAKE_PATH --version
+  - cd ..
+# inside $HOME
+  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+  - sudo apt -qy install $CXX $CC libpng-dev libjpeg-dev libtiff-dev libraw-dev libblas-dev liblapack-dev python3-pip python3-setuptools
+  - sudo -H pip3 install wheel
+  - sudo -H pip3 install conan
+  - conan --version
+  - mkdir 3rdparty
+  - cd 3rdparty
+#inside 3rdparty
+  - wget https://dl.bintray.com/boostorg/release/1.73.0/source/boost_1_73_0.tar.gz
+  - tar -xzf boost_1_73_0.tar.gz
+  - cd boost_1_73_0
+#inside 3rdparty/boost_1_73_0
+  - ./bootstrap.sh
+  - ./b2 --with-filesystem
+  - export BOOST_ROOT=$PWD
+  - echo $BOOST_ROOT
+  - cd ../
+#inside 3rdparty
+  - git clone https://bitbucket.org/blaze-lib/blaze.git
+  - cd blaze
+#inside 3rdparty/blaze
+  - mkdir build && cd build
+  - $CMAKE_PATH ..
+  - sudo make install
+  - cd ../..
+#inside 3rdparty
+  - git clone https://github.com/CLIUtils/CLI11.git
+  - cd CLI11  
+#inside 3rdparty/CLI11
+  - git checkout v1.9.0
+  - rm -r examples # do not build examples
+  - mkdir build && cd build
+  - $CMAKE_PATH -DBUILD_TESTING=OFF ..
+  - sudo make install
+  - cd ../..
+#inside 3rdparty 
+  - git clone https://github.com/catchorg/Catch2.git
+  - cd Catch2
+#inside 3rdpart/Catch2
+  - mkdir build && cd build
+  - $CMAKE_PATH -DCATCH_BUILD_TESTING=OFF ..
+  - sudo make install
+  - cd ../..
+#inside 3rdparty
+# finished installing dependencies, configuring project
+  - cd ../
+#inside project directory
+  - ls
+  - mkdir build && cd build
+  - $CMAKE_PATH -DCMAKE_BUILD_TYPE=Release -DUSE_CONAN=$SHOULD_USE_CONAN -Dblas_lib_name="" -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_C_COMPILER=$CC ..
+
+script:
+  - make test_target
+  - $CTEST_PATH --output-on-failure
