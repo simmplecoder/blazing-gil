@@ -74,4 +74,4 @@ script:
   - ls
   - ls test  
   - ls bin
-  - ./bin/test_target
+  - ctest --output-on-failure
