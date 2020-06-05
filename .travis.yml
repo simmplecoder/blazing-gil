@@ -16,6 +16,7 @@ install:
   - wget https://github.com/Kitware/CMake/releases/download/v3.17.3/cmake-3.17.3-Linux-x86_64.tar.gz
   - tar -zxf cmake-3.17.3-Linux-x86_64.tar.gz
   - export CMAKE_PATH=$PWD/cmake-3.17.3-Linux-x86_64/bin/cmake
+  - export CTEST_PATH=$PWD/cmake-3.17.3-Linux-x86_64/bin/ctest
   - $CMAKE_PATH --version
   - cd ..
 # inside $HOME
@@ -74,4 +75,4 @@ script:
   - ls
   - ls test  
   - ls bin
-  - ctest --output-on-failure
+  - $CTEST_PATH --output-on-failure
