@@ -72,7 +72,4 @@ install:
 
 script:
   - make test_target
-  - ls
-  - ls test  
-  - ls bin
   - $CTEST_PATH --output-on-failure

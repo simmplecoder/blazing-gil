@@ -15,20 +15,21 @@ TEST_CASE("as_matrix typecheck for gray8_image", "[as_matrix]")
     auto view = gil::view(image);
 
     auto result = flash::as_matrix(view);
-    using expected_t = blaze::CustomMatrix<gil::uint8_t, blaze::unaligned, blaze::unpadded, blaze::rowMajor>;
+    using expected_t =
+        blaze::CustomMatrix<gil::uint8_t, blaze::unaligned, blaze::unpadded, blaze::rowMajor>;
     STATIC_REQUIRE(std::is_same_v<decltype(result), expected_t>);
 }
 
-TEST_CASE("as_matrix gray8_image zero value_check")
+TEST_CASE("as_matrix gray8_image zero value_check", "[as_matrix]")
 {
     gil::gray8_image_t image(16, 16, zero_gray8_pixel);
     auto view = gil::view(image);
 
     auto result = flash::as_matrix(view);
-    REQUIRE(blaze::isZero(result));    
+    REQUIRE(blaze::isZero(result));
 }
 
-TEST_CASE("as_matrix gray8_image modify matrix")
+TEST_CASE("as_matrix gray8_image modify matrix", "[as_matrix]")
 {
     gil::gray8_image_t image(16, 16, zero_gray8_pixel);
     auto view = gil::view(image);
@@ -47,7 +48,7 @@ TEST_CASE("as_matrix gray8_image modify matrix")
     REQUIRE(view(2, 3)[0] == value2);
 }
 
-TEST_CASE("as_matrix gray8_image modify image")
+TEST_CASE("as_matrix gray8_image modify image", "[as_matrix]")
 {
     gil::gray8_image_t image(16, 16, zero_gray8_pixel);
     auto view = gil::view(image);
@@ -70,22 +71,23 @@ TEST_CASE("as_matrix typecheck for gray16_image", "[as_matrix]")
     auto view = gil::view(image);
 
     auto result = flash::as_matrix(view);
-    using expected_t = blaze::CustomMatrix<gil::uint16_t, blaze::unaligned, blaze::unpadded, blaze::rowMajor>;
-    STATIC_REQUIRE(std::is_same_v<decltype(result), expected_t>);    
+    using expected_t =
+        blaze::CustomMatrix<gil::uint16_t, blaze::unaligned, blaze::unpadded, blaze::rowMajor>;
+    STATIC_REQUIRE(std::is_same_v<decltype(result), expected_t>);
 }
 
 gil::gray16_pixel_t zero_gray16_pixel(0);
 
-TEST_CASE("as_matrix gray16_image zero value_check")
+TEST_CASE("as_matrix gray16_image zero value_check", "[as_matrix]")
 {
     gil::gray16_image_t image(16, 16, zero_gray16_pixel);
     auto view = gil::view(image);
 
     auto result = flash::as_matrix(view);
-    REQUIRE(blaze::isZero(result));    
+    REQUIRE(blaze::isZero(result));
 }
 
-TEST_CASE("as_matrix gray16_image modify matrix")
+TEST_CASE("as_matrix gray16_image modify matrix", "[as_matrix]")
 {
     gil::gray16_image_t image(16, 16, zero_gray16_pixel);
     auto view = gil::view(image);
@@ -104,7 +106,7 @@ TEST_CASE("as_matrix gray16_image modify matrix")
     REQUIRE(view(2, 3)[0] == value2);
 }
 
-TEST_CASE("as_matrix gray16_image modify image")
+TEST_CASE("as_matrix gray16_image modify image", "[as_matrix]")
 {
     gil::gray16_image_t image(16, 16, zero_gray16_pixel);
     auto view = gil::view(image);

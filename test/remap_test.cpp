@@ -6,7 +6,7 @@
 
 #include <flash/core.hpp>
 
-TEST_CASE("test remap_to_channeled - simple case", "[to_matrix_channeled]")
+TEST_CASE("test remap_to_channeled - simple case", "[remap_test]")
 {
     blaze::StaticVector<int, 3> default_vector({0, 1, 2});
     blaze::DynamicMatrix<blaze::StaticVector<int, 3>> matrix(2, 3, default_vector);
@@ -16,7 +16,7 @@ TEST_CASE("test remap_to_channeled - simple case", "[to_matrix_channeled]")
     REQUIRE(expected == result);
 }
 
-TEST_CASE("test remap_to_channeled - slightly harder case", "[to_matrix_channeled]")
+TEST_CASE("test remap_to_channeled - slightly harder case", "[remap_test]")
 {
     blaze::StaticVector<int, 3> default_vector({0, 1, 2});
     blaze::DynamicMatrix<blaze::StaticVector<int, 3>> matrix(2, 3, default_vector);
@@ -26,7 +26,7 @@ TEST_CASE("test remap_to_channeled - slightly harder case", "[to_matrix_channele
     REQUIRE(expected == result);
 }
 
-TEST_CASE("test remap_to_channeled - linear case", "[to_matrix_channeled]")
+TEST_CASE("test remap_to_channeled - linear case", "[remap_test]")
 {
     // input range is from 0 to 15, so the length of the range is 16
     // the output range is from 0 to 255, so the length is 256
