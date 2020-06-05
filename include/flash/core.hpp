@@ -275,8 +275,8 @@ auto as_matrix_channeled(ImageView source)
 // only use with blaze::min and blaze::max
 // note that this is intended to narrow from source range
 // to destination range
-template <typename U, typename SourceMatrix, typename T>
-auto remap_to(const SourceMatrix& source, T src_min, T src_max,
+template <typename U, typename MT, bool StorageOrder, typename T>
+auto remap_to(const blaze::DenseMatrix<MT, StorageOrder>& source, T src_min, T src_max,
               U dst_min = std::numeric_limits<U>::min(), U dst_max = std::numeric_limits<U>::max())
 {
     // ensure that dst_max - dst_min will not overflow
@@ -291,8 +291,8 @@ auto remap_to(const SourceMatrix& source, T src_min, T src_max,
                       });
 }
 
-template <typename U, typename SourceMatrix>
-auto remap_to(const SourceMatrix& source)
+template <typename U, typename MT, bool StorageOrder>
+auto remap_to(const blaze::DenseMatrix<MT, StorageOrder>& source)
 {
     return remap_to<U>(source, blaze::min(source), blaze::max(source));
 }
