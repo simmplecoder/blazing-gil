@@ -10,7 +10,7 @@ template <typename PixelType>
 PixelType create_pixel(std::uint8_t value)
 {
     PixelType pixel;
-    auto num_channels = gil::num_channels<PixelType>::value;
+    constexpr std::ptrdiff_t num_channels = gil::num_channels<PixelType>::value;
     for (flash::signed_size i = 0; i < num_channels; ++i) {
         pixel[i] = value;
     }
@@ -37,7 +37,7 @@ void test_vector_matrix_type()
     REQUIRE(result == expected);
 
     std::uint8_t value = 23;
-    constexpr auto num_channels = gil::num_channels<PixelType>{};
+    constexpr std::ptrdiff_t num_channels = gil::num_channels<PixelType>{};
     for (flash::signed_size i = 0; i < num_channels; ++i) {
         auto pixel = create_zero_pixel<PixelType>();
         pixel[i] = value;
@@ -55,7 +55,7 @@ void test_vector_matrix_type()
     {
         PixelType pixel;
         VectorType vector;
-        auto num_channels = gil::num_channels<PixelType>::value;
+        constexpr std::ptrdiff_t num_channels = gil::num_channels<PixelType>::value;
         for (flash::signed_size i = 0; i < num_channels; ++i) {
             pixel[i] = i;
             vector[static_cast<std::size_t>(i)] = i;
@@ -151,19 +151,19 @@ TEST_CASE("Scalar matrix to gray8 image", "[from_matrix]")
 {
     using image_type = gil::gray8_image_t;
     using scalar_type = std::uint8_t;
-    test_scalar_matrix_type<scalar_type, image_type>();    
+    test_scalar_matrix_type<scalar_type, image_type>();
 }
 
 TEST_CASE("Scalar matrix to gray16 image", "[from_matrix]")
 {
     using image_type = gil::gray16_image_t;
     using scalar_type = std::uint16_t;
-    test_scalar_matrix_type<scalar_type, image_type>();    
+    test_scalar_matrix_type<scalar_type, image_type>();
 }
 
 TEST_CASE("Scalar matrix to gray32f image", "[from_matrix]")
 {
     using image_type = gil::gray32f_image_t;
     using scalar_type = float;
-    test_scalar_matrix_type<scalar_type, image_type>();    
+    test_scalar_matrix_type<scalar_type, image_type>();
 }

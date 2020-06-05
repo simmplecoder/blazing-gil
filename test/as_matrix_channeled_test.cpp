@@ -39,8 +39,8 @@ void pixel4_uint8_different_values_test()
         }
     }
 
-    for (flash::signed_size i = 0; i < matrix_view.rows(); ++i) {
-        for (flash::signed_size j = 0; j < matrix_view.columns(); ++j) {
+    for (std::size_t i = 0; i < matrix_view.rows(); ++i) {
+        for (std::size_t j = 0; j < matrix_view.columns(); ++j) {
             gil::rgba8_pixel_t expected_pixel(
                 static_cast<unsigned char>(i), static_cast<unsigned char>(j), value, 0);
             REQUIRE(view(j, i) == expected_pixel);
@@ -74,8 +74,8 @@ void pixel4_float32_different_values_test()
         }
     }
 
-    for (flash::signed_size i = 0; i < matrix_view.rows(); ++i) {
-        for (flash::signed_size j = 0; j < matrix_view.columns(); ++j) {
+    for (std::size_t i = 0; i < matrix_view.rows(); ++i) {
+        for (std::size_t j = 0; j < matrix_view.columns(); ++j) {
             PixelType expected_pixel(static_cast<float>(i), static_cast<float>(j), value, 0.0f);
             REQUIRE(view(j, i) == expected_pixel);
         }
@@ -108,8 +108,8 @@ void pixel3_float32_different_values_test()
         }
     }
 
-    for (flash::signed_size i = 0; i < matrix_view.rows(); ++i) {
-        for (flash::signed_size j = 0; j < matrix_view.columns(); ++j) {
+    for (std::size_t i = 0; i < matrix_view.rows(); ++i) {
+        for (std::size_t j = 0; j < matrix_view.columns(); ++j) {
             PixelType expected_pixel(static_cast<float>(i), static_cast<float>(j), value);
             REQUIRE(view(j, i) == expected_pixel);
         }

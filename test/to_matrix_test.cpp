@@ -41,10 +41,10 @@ void test_to_matrix_type()
         return pixel;
     });
 
-    for (std::size_t channel_index; channel_index < num_channels; ++channel_index) {
+    for (std::size_t channel_index = 0; channel_index < num_channels; ++channel_index) {
         auto result = flash::to_matrix(view, channel_index);
-        for (std::size_t i = 0; i < view.height(); ++i) {
-            for (std::size_t j = 0; j < view.width(); ++j) {
+        for (std::ptrdiff_t i = 0; i < view.height(); ++i) {
+            for (std::ptrdiff_t j = 0; j < view.width(); ++j) {
                 REQUIRE(result(j, i) == view(i, j)[channel_index]);
             }
         }
@@ -87,11 +87,11 @@ void test_to_matrix_out()
         return pixel;
     });
 
-    for (std::size_t channel_index; channel_index < num_channels; ++channel_index) {
+    for (std::size_t channel_index = 0; channel_index < num_channels; ++channel_index) {
         blaze::DynamicMatrix<OutputType> result(view.height(), view.width());
         flash::to_matrix(view, result, channel_index);
-        for (std::size_t i = 0; i < view.height(); ++i) {
-            for (std::size_t j = 0; j < view.width(); ++j) {
+        for (std::ptrdiff_t i = 0; i < view.height(); ++i) {
+            for (std::ptrdiff_t j = 0; j < view.width(); ++j) {
                 REQUIRE(result(j, i) == view(i, j)[channel_index]);
             }
         }
