@@ -8,6 +8,8 @@ env:
   - CXX=g++-8 CC=gcc-8 SHOULD_USE_CONAN=OFF
   - CXX=g++-9 CC=gcc-9 SHOULD_USE_CONAN=ON
   - CXX=g++-9 CC=gcc-9 SHOULD_USE_CONAN=OFF  
+  - CXX=g++-10 CC=gcc-10 SHOULD_USE_CONAN=ON
+  - CXX=g++-10 CC=gcc-10 SHOULD_USE_CONAN=OFF    
 
 install:
   - sudo apt -y remove cmake
@@ -58,8 +60,9 @@ install:
 #inside 3rdparty 
   - git clone https://github.com/catchorg/Catch2.git
   - cd Catch2
+#inside 3rdpart/Catch2
   - mkdir build && cd build
-  - $CMAKE_PATH ..
+  - $CMAKE_PATH -DCATCH_BUILD_TESTING=OFF ..
   - sudo make install
   - cd ../..
 #inside 3rdparty
