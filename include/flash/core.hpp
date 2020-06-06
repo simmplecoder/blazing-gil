@@ -275,8 +275,8 @@ auto as_matrix_channeled(ImageView source)
 // only use with blaze::min and blaze::max
 // note that this is intended to narrow from source range
 // to destination range
-template <typename U, typename SourceMatrix, typename T>
-auto remap_to(const SourceMatrix& source, T src_min, T src_max,
+template <typename U, typename MT, bool StorageOrder, typename T>
+auto remap_to(const blaze::DenseMatrix<MT, StorageOrder>& source, T src_min, T src_max,
               U dst_min = std::numeric_limits<U>::min(), U dst_max = std::numeric_limits<U>::max())
 {
     // ensure that dst_max - dst_min will not overflow
@@ -291,8 +291,8 @@ auto remap_to(const SourceMatrix& source, T src_min, T src_max,
                       });
 }
 
-template <typename U, typename SourceMatrix>
-auto remap_to(const SourceMatrix& source)
+template <typename U, typename MT, bool StorageOrder>
+auto remap_to(const blaze::DenseMatrix<MT, StorageOrder>& source)
 {
     return remap_to<U>(source, blaze::min(source), blaze::max(source));
 }
@@ -476,31 +476,35 @@ void from_matrix(const blaze::DenseMatrix<MT, SO>& data, ImageView view)
         blaze::IsDenseVector<blaze::UnderlyingElement_t<MT>>{}, view, data);
 }
 
-template <typename T, typename U>
-blaze::DynamicMatrix<T> pad(const blaze::DynamicMatrix<T>& source, std::size_t pad_count,
-                            const U& padding_value)
+template <typename MT, bool StorageOrder, typename U>
+auto pad(const blaze::DenseMatrix<MT, StorageOrder>& source, std::size_t pad_count,
+         const U& padding_value)
 {
-    static_assert(std::is_convertible_v<T, U>);
+    using element_type = blaze::UnderlyingElement_t<MT>;
+    static_assert(std::is_convertible_v<element_type, U>);
+    if (pad_count == 0) {
+        return blaze::DynamicMatrix<element_type>(source);
+    }
+    blaze::DynamicMatrix<element_type> result((~source).rows() + pad_count * 2,
+                                              (~source).columns() + pad_count * 2);
 
-    blaze::DynamicMatrix<T> result(source.rows() + pad_count * 2, source.columns() + pad_count * 2);
-
-    auto full_resulting_width = source.columns() + pad_count * 2;
+    auto full_resulting_width = (~source).columns() + pad_count * 2;
     // first pad_count rows
     blaze::submatrix(result, 0, 0, pad_count, full_resulting_width) = padding_value;
     // last pad_count rows
-    blaze::submatrix(result, source.rows(), 0, pad_count, full_resulting_width) = padding_value;
+    blaze::submatrix(result, (~source).rows() + pad_count, 0, pad_count, full_resulting_width) = padding_value;
 
-    auto vertical_block_height = source.rows();
+    auto vertical_block_height = (~source).rows();
     // left pad_count columns, do note that top pad_count rows are already
     // filled
     blaze::submatrix(result, pad_count, 0, vertical_block_height, pad_count) = padding_value;
     // right pad_count columns, do note that top pad_count rows are already
     // filled
-    blaze::submatrix(result, pad_count, source.columns(), vertical_block_height, pad_count) =
+    blaze::submatrix(result, pad_count, (~source).columns() + pad_count, vertical_block_height, pad_count) =
         padding_value;
 
     // don't forget to copy the original contents
-    blaze::submatrix(result, pad_count, pad_count, source.rows(), source.columns()) = source;
+    blaze::submatrix(result, pad_count, pad_count, (~source).rows(), (~source).columns()) = source;
 
     return result;
 }
