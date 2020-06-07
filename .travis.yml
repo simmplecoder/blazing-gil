@@ -31,7 +31,7 @@ install:
   - cd 3rdparty
 #inside 3rdparty
   - wget https://github.com/boostorg/boost/archive/boost-1.73.0.tar.gz
-  - tar -xzf boost_1_73_0.tar.gz
+  - tar -xzf boost-1_73_0.tar.gz
   - cd boost_1_73_0
 #inside 3rdparty/boost_1_73_0
   - ./bootstrap.sh
