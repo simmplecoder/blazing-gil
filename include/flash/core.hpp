@@ -15,6 +15,7 @@
 #include <boost/gil/image_view.hpp>
 #include <boost/gil/pixel.hpp>
 #include <boost/gil/typedefs.hpp>
+#include <functional>
 #include <limits>
 #include <stdexcept>
 #include <type_traits>
@@ -89,6 +90,35 @@ struct true_channel_type<boost::gil::float64_t> {
 
 template <typename ChannelType>
 using true_channel_type_t = typename true_channel_type<ChannelType>::type;
+
+template <typename MT, bool StorageOrder, typename Reducer>
+blaze::UnderlyingElement_t<MT> channelwise_reduce(const blaze::DenseMatrix<MT, StorageOrder>& input,
+                                                  Reducer reducer)
+{
+    using result_type = blaze::UnderlyingElement_t<MT>;
+    return blaze::reduce(input, [reducer](result_type old, result_type current) {
+        for (std::size_t i = 0; i < current.size(); ++i) {
+            old[i] = reducer(old[i], current[i]);
+        }
+        return old;
+    });
+}
+
+template <typename MT, bool StorageOrder, typename Compare = std::less<>>
+blaze::UnderlyingElement_t<MT> channelwise_min(const blaze::DenseMatrix<MT, StorageOrder>& input,
+                                               Compare compare = {})
+{
+    return channelwise_reduce(
+        input, [compare](auto lhs, auto rhs) { return (compare(lhs, rhs)) ? lhs : rhs; });
+}
+
+template <typename MT, bool StorageOrder, typename Compare = std::less<>>
+blaze::UnderlyingElement_t<MT> channelwise_max(const blaze::DenseMatrix<MT, StorageOrder>& input,
+                                               Compare compare = {})
+{
+    return channelwise_reduce(
+        input, [compare](auto lhs, auto rhs) { return (compare(rhs, lhs)) ? lhs : rhs; });
+}
 
 /** \brief Extract `channel`th value from each pixel in `view` and writes into `result`
 
@@ -323,27 +353,8 @@ auto remap_to_channeled(const blaze::DenseMatrix<MT, SO>& source,
     using element_type = blaze::UnderlyingElement_t<source_vector_type>;
     static_assert(blaze::IsStatic_v<source_vector_type> &&
                   blaze::IsDenseVector_v<source_vector_type>);
-    auto min_reducer = [](source_vector_type prev, const source_vector_type& current) {
-        for (std::size_t i = 0; i < prev.size(); ++i) {
-            if (prev[i] > current[i]) {
-                prev[i] = current[i];
-            }
-        }
-
-        return prev;
-    };
-    auto src_min_elems = blaze::reduce(source, min_reducer);
-
-    auto max_reducer = [](source_vector_type prev, const source_vector_type& current) {
-        for (std::size_t i = 0; i < prev.size(); ++i) {
-            if (prev[i] < current[i]) {
-                prev[i] = current[i];
-            }
-        }
-
-        return prev;
-    };
-    auto src_max_elems = blaze::reduce(source, max_reducer);
+    auto src_min_elems = channelwise_min(source);
+    auto src_max_elems = channelwise_max(source);
 
     using result_vector_type = blaze::StaticVector<U, source_vector_type::size()>;
 
@@ -492,7 +503,8 @@ auto pad(const blaze::DenseMatrix<MT, StorageOrder>& source, std::size_t pad_cou
     // first pad_count rows
     blaze::submatrix(result, 0, 0, pad_count, full_resulting_width) = padding_value;
     // last pad_count rows
-    blaze::submatrix(result, (~source).rows() + pad_count, 0, pad_count, full_resulting_width) = padding_value;
+    blaze::submatrix(result, (~source).rows() + pad_count, 0, pad_count, full_resulting_width) =
+        padding_value;
 
     auto vertical_block_height = (~source).rows();
     // left pad_count columns, do note that top pad_count rows are already
@@ -500,7 +512,8 @@ auto pad(const blaze::DenseMatrix<MT, StorageOrder>& source, std::size_t pad_cou
     blaze::submatrix(result, pad_count, 0, vertical_block_height, pad_count) = padding_value;
     // right pad_count columns, do note that top pad_count rows are already
     // filled
-    blaze::submatrix(result, pad_count, (~source).columns() + pad_count, vertical_block_height, pad_count) =
+    blaze::submatrix(
+        result, pad_count, (~source).columns() + pad_count, vertical_block_height, pad_count) =
         padding_value;
 
     // don't forget to copy the original contents
@@ -508,4 +521,5 @@ auto pad(const blaze::DenseMatrix<MT, StorageOrder>& source, std::size_t pad_cou
 
     return result;
 }
+
 } // namespace flash

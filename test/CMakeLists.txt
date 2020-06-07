@@ -13,7 +13,8 @@ add_executable(test_target
     as_matrix_test.cpp
     as_matrix_channeled_test.cpp
     true_channel_type_test.cpp
-    pad_test.cpp)
+    pad_test.cpp
+    channelwise_reduce_test.cpp)
 target_link_libraries(test_target PRIVATE Catch2::Catch2 blazing-gil)
 target_compile_options(test_target PRIVATE
 $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
