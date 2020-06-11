@@ -105,24 +105,66 @@ auto anisotropic_diffusion(const blaze::DenseMatrix<MT, StorageOrder>& input, do
     using matrix_type = blaze::DynamicMatrix<output_element_type, StorageOrder>;
     using compute_matrix_type = blaze::DynamicMatrix<compute_element_type, StorageOrder>;
     matrix_type output(input);
+    compute_matrix_type nabla(output.rows(), output.columns());
+    compute_matrix_type c(output.rows(), output.columns());
     for (std::uint64_t i = 0; i < iteration_count; ++i) {
-        compute_matrix_type nabla(output.rows(), output.columns());
-        compute_matrix_type c(output.rows(), output.columns());
-        nabla =
-            blaze::generate(nabla.rows(), nabla.columns(), [&output](std::size_t i, std::size_t j) {
-                if (i == 0 || i == output.rows() - 1 || j == 0 || j == output.columns() - 1) {
+        const auto rows = output.rows();
+        const auto columns = output.columns();
+        // middle case
+        nabla = blaze::generate(
+            nabla.rows(), nabla.columns(), [&output, rows, columns](std::size_t i, std::size_t j) {
+                if (i == 0 || i == rows - 1 || j == 0 || j == columns - 1) {
                     return compute_element_type(output_element_type(0));
                 }
-                return compute_element_type{output(i - 1, j) - output(i, j),
-                                            output(i + 1, j) - output(i, j),
-                                            output(i, j + 1) - output(i, j),
-                                            output(i, j - 1) - output(i, j),
-                                            output(i - 1, j + 1) - output(i, j),
-                                            output(i - 1, j - 1) - output(i, j),
-                                            output(i + 1, j + 1) - output(i, j),
-                                            output(i + 1, j - 1) - output(i, j)};
+                return compute_element_type{output(i - 1, j) - output(i, j),      // north
+                                            output(i + 1, j) - output(i, j),      // south
+                                            output(i, j + 1) - output(i, j),      // east
+                                            output(i, j - 1) - output(i, j),      // west
+                                            output(i - 1, j + 1) - output(i, j),  // NE
+                                            output(i - 1, j - 1) - output(i, j),  // NW
+                                            output(i + 1, j + 1) - output(i, j),  // SE
+                                            output(i + 1, j - 1) - output(i, j)}; // SW
             });
-        std::cout << blaze::isZero(nabla) << '\n';
+
+        // std::cout << blaze::isZero(nabla) << '\n';
+        auto current = output(0, 0);
+        const auto zero = output_element_type(0);
+        nabla(0, 0) = {zero,
+                       output(1, 0) - current,
+                       output(0, 1) - current,
+                       zero,
+                       zero,
+                       output(1, 1) - current,
+                       zero,
+                       zero};
+        current = output(0, columns - 1);
+        nabla(0, columns - 1) = {zero,
+                                 output(1, columns - 1) - current,
+                                 zero,
+                                 output(0, columns - 2) - current,
+                                 zero,
+                                 zero,
+                                 zero,
+                                 output(1, columns - 2) - current};
+        current = output(rows - 1, 0);
+        nabla(rows - 1, 0) = {output(rows - 2, 0) - current,
+                              zero,
+                              output(rows - 1, 1) - current,
+                              zero,
+                              output(rows - 2, 1) - current,
+                              zero,
+                              zero,
+                              zero};
+        current = output(rows - 1, columns - 1);
+        nabla(rows - 1, columns - 1) = {output(rows - 2, columns - 1) - current,
+                                        zero,
+                                        zero,
+                                        output(rows - 1, columns - 2) - current,
+                                        zero,
+                                        output(rows - 2, columns - 2) - current,
+                                        zero,
+                                        zero};
+
         c = blaze::map(nabla, [kappa](const auto& element) {
             if (blaze::isZero(element)) {
                 // std::cout << "encountered zero\n";
