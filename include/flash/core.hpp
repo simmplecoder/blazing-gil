@@ -7,11 +7,9 @@
 #include <blaze/math/PaddingFlag.h>
 #include <blaze/math/StorageOrder.h>
 #include <blaze/math/dense/StaticVector.h>
-#include <blaze/math/expressions/DenseMatrix.h>
 #include <blaze/math/expressions/Forward.h>
 #include <blaze/math/typetraits/IsDenseVector.h>
 #include <blaze/math/typetraits/IsStatic.h>
-#include <blaze/math/typetraits/IsVector.h>
 #include <blaze/math/typetraits/UnderlyingElement.h>
 #include <boost/gil/algorithm.hpp>
 #include <boost/gil/image.hpp>
@@ -490,41 +488,9 @@ void from_matrix(const blaze::DenseMatrix<MT, SO>& data, ImageView view)
         blaze::IsDenseVector<blaze::UnderlyingElement_t<MT>>{}, view, data);
 }
 
-template <typename MT, bool StorageOrder>
-auto channelwise_maximum(const blaze::DenseMatrix<MT, StorageOrder>& matrix)
-{
-    using element_type = blaze::UnderlyingElement_t<MT>;
-    static_assert(blaze::IsStatic_v<element_type> && blaze::IsVector_v<element_type>);
-    auto max_reducer = [](auto prev, auto current) {
-        for (std::size_t i = 0; i < prev.size(); ++i) {
-            if (prev[i] < current[i]) {
-                prev[i] = current[i];
-            }
-        }
-
-        return prev;
-    };
-    return blaze::reduce(matrix, max_reducer);
-}
-
-template <typename MT, bool StorageOrder>
-auto channelwise_minimum(const blaze::DenseMatrix<MT, StorageOrder>& matrix)
-{
-    auto min_reducer = [](auto prev, auto current) {
-        for (std::size_t i = 0; i < prev.size(); ++i) {
-            if (prev[i] > current[i]) {
-                prev[i] = current[i];
-            }
-        }
-
-        return prev;
-    };
-    return blaze::reduce(matrix, min_reducer);
-}
-
-template <typename T, typename U>
-blaze::DynamicMatrix<T> pad(const blaze::DynamicMatrix<T>& source, std::size_t pad_count,
-                            const U& padding_value)
+template <typename MT, bool StorageOrder, typename U>
+auto pad(const blaze::DenseMatrix<MT, StorageOrder>& source, std::size_t pad_count,
+         const U& padding_value)
 {
     using element_type = blaze::UnderlyingElement_t<MT>;
     static_assert(std::is_convertible_v<element_type, U>);
@@ -557,6 +523,5 @@ blaze::DynamicMatrix<T> pad(const blaze::DynamicMatrix<T>& source, std::size_t p
     return result;
 }
 
-} // namespace flash
-
 #endif
+} // namespace flash

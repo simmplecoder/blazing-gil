@@ -101,37 +101,36 @@ auto anisotropic_diffusion(const blaze::DenseMatrix<MT, StorageOrder>& input, do
         std::conditional_t<blaze::IsVector_v<element_type>,
                            blaze::StaticVector<double, element_type::size()>,
                            double>;
+    using compute_element_type = blaze::StaticVector<output_element_type, 8>;
     using matrix_type = blaze::DynamicMatrix<output_element_type, StorageOrder>;
+    using compute_matrix_type = blaze::DynamicMatrix<compute_element_type, StorageOrder>;
     matrix_type output(input);
-    std::size_t output_area_start[2] = {1, 1};
-    std::size_t output_area_dims[2] = {output.rows() - 2, output.columns() - 2};
-    auto region = [&output, output_area_start, output_area_dims](int i, int j) {
-        return blaze::submatrix(output,
-                                output_area_start[0] + i,
-                                output_area_start[1] + j,
-                                output_area_dims[0],
-                                output_area_dims[1]);
-    };
-    auto output_area = region(0, 0);
     for (std::uint64_t i = 0; i < iteration_count; ++i) {
-        auto nabla = blaze::evaluate(blaze::generate(
-            output_area.rows(), output_area.columns(), [&output](std::size_t i, std::size_t j) {
-                auto real_i = i + 1;
-                auto real_j = j + 1;
-                return blaze::StaticVector<output_element_type, 8>{
-                    output(real_i - 1, real_j) - output(real_i, real_j),
-                    output(real_i + 1, real_j) - output(real_i, real_j),
-                    output(real_i, real_j + 1) - output(real_i, real_j),
-                    output(real_i, real_j - 1) - output(real_i, real_j),
-                    output(real_i - 1, real_j + 1) - output(real_i, real_j),
-                    output(real_i - 1, real_j - 1) - output(real_i, real_j),
-                    output(real_i + 1, real_j + 1) - output(real_i, real_j),
-                    output(real_i + 1, real_j - 1) - output(real_i, real_j)};
-            }));
-        auto c = blaze::map(nabla, [kappa](const auto& element) {
+        compute_matrix_type nabla(output.rows(), output.columns());
+        compute_matrix_type c(output.rows(), output.columns());
+        nabla =
+            blaze::generate(nabla.rows(), nabla.columns(), [&output](std::size_t i, std::size_t j) {
+                if (i == 0 || i == output.rows() - 1 || j == 0 || j == output.columns() - 1) {
+                    return compute_element_type(output_element_type(0));
+                }
+                return compute_element_type{output(i - 1, j) - output(i, j),
+                                            output(i + 1, j) - output(i, j),
+                                            output(i, j + 1) - output(i, j),
+                                            output(i, j - 1) - output(i, j),
+                                            output(i - 1, j + 1) - output(i, j),
+                                            output(i - 1, j - 1) - output(i, j),
+                                            output(i + 1, j + 1) - output(i, j),
+                                            output(i + 1, j - 1) - output(i, j)};
+            });
+        std::cout << blaze::isZero(nabla) << '\n';
+        c = blaze::map(nabla, [kappa](const auto& element) {
+            if (blaze::isZero(element)) {
+                // std::cout << "encountered zero\n";
+                return element;
+            }
             auto c_element = blaze::evaluate(element / kappa);
             auto half = 0.5;
-            return blaze::StaticVector<output_element_type, 8>{
+            return compute_element_type{
                 blaze::exp(-c_element[0] * c_element[0]),
                 blaze::exp(-c_element[1] * c_element[1]),
                 blaze::exp(-c_element[2] * c_element[2]),
@@ -145,7 +144,8 @@ auto anisotropic_diffusion(const blaze::DenseMatrix<MT, StorageOrder>& input, do
         nabla %= c;
         auto sum = blaze::evaluate(
             blaze::map(nabla, [](auto element) { return blaze::sum(element) * 1.0 / 7; }));
-        output_area += sum;
+        // std::cout << sum << '\n';
+        output += sum;
     }
 
     return output;

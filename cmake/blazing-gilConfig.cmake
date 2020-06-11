@@ -10,7 +10,7 @@ find_package(blaze  ${blazingGilExtraArgs})
 
 include(${CMAKE_CURRENT_LIST_DIR}/blazing-gilTargets.cmake)
 
-set(USE_CONAN 1)
+set(USE_CONAN ON)
 if (NOT USE_CONAN)
     find_package(JPEG ${blazingGilExtraArgs})
     find_package(PNG ${blazingGilExtraArgs})

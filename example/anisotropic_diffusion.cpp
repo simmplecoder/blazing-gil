@@ -45,10 +45,8 @@ int main(int argc, char* argv[])
     auto remapped = flash::remap_to_channeled<std::uint8_t>(diffused);
 
     auto image = flash::from_matrix<gil::rgb8_image_t>(remapped);
-    auto diffused_min =
-        blaze::UnderlyingElement_t<decltype(diffused)>(flash::channelwise_minimum(diffused));
-    auto diffused_max =
-        blaze::UnderlyingElement_t<decltype(diffused)>(flash::channelwise_maximum(diffused));
+    auto diffused_min = flash::channelwise_min(diffused);
+    auto diffused_max = flash::channelwise_max(diffused);
 
     std::cout << "diffused min: " << diffused_min << '\n'
               << "diffused max: " << diffused_max << '\n';
