@@ -3,6 +3,7 @@
 
 #include <blaze/Blaze.h>
 #include <blaze/math/typetraits/IsVector.h>
+#include <blaze/math/typetraits/UnderlyingElement.h>
 #include <flash/convolution.hpp>
 
 #include <algorithm>
@@ -110,11 +111,15 @@ auto anisotropic_diffusion(const blaze::DenseMatrix<MT, StorageOrder>& input, do
     for (std::uint64_t i = 0; i < iteration_count; ++i) {
         const auto rows = output.rows();
         const auto columns = output.columns();
+        const auto zero = output_element_type(0);
+        const auto zero_vector = compute_element_type(zero);
         // middle case
         nabla = blaze::generate(
-            nabla.rows(), nabla.columns(), [&output, rows, columns](std::size_t i, std::size_t j) {
+            nabla.rows(),
+            nabla.columns(),
+            [&output, rows, columns, zero_vector](std::size_t i, std::size_t j) {
                 if (i == 0 || i == rows - 1 || j == 0 || j == columns - 1) {
-                    return compute_element_type(output_element_type(0));
+                    return zero_vector;
                 }
                 return compute_element_type{output(i - 1, j) - output(i, j),      // north
                                             output(i + 1, j) - output(i, j),      // south
@@ -127,8 +132,84 @@ auto anisotropic_diffusion(const blaze::DenseMatrix<MT, StorageOrder>& input, do
             });
 
         // std::cout << blaze::isZero(nabla) << '\n';
+
+        // upper row
+        const auto row = blaze::row(nabla, 0);
+        static_assert(
+            std::is_same_v<blaze::UnderlyingElement_t<decltype(row)>, compute_element_type>);
+        // blaze::row(nabla, 0) =
+        const auto first_row = blaze::evaluate(
+            blaze::generate(columns, [&output, columns, zero, zero_vector](std::size_t j) {
+                if (j == 0 || j == columns - 1) {
+                    return zero_vector;
+                }
+                // std::cout << j << '\n';
+                auto current = output(0, j);
+                return compute_element_type{zero,
+                                            output(1, j) - current,
+                                            output(0, j + 1) - current,
+                                            output(0, j - 1) - current,
+                                            zero,
+                                            zero,
+                                            output(1, j + 1) - current,
+                                            output(1, j - 1) - current};
+            }));
+        const auto last_row = blaze::evaluate(
+            blaze::generate(columns, [&output, rows, columns, zero, zero_vector](std::size_t j) {
+                if (j == 0 || j == columns - 1) {
+                    return zero_vector;
+                }
+                auto current = output(rows - 1, j);
+                return compute_element_type{output(rows - 2, j) - current,
+                                            zero,
+                                            output(rows - 1, j + 1) - current,
+                                            output(rows - 1, j - 1) - current,
+                                            zero,
+                                            zero,
+                                            output(rows - 1, j + 1) - current,
+                                            output(rows - 1, j - 1) - current};
+            }));
+        const auto first_column = blaze::evaluate(
+            blaze::generate(columns, [&output, rows, columns, zero, zero_vector](std::size_t j) {
+                if (j == 0 || j == rows - 1) {
+                    return zero_vector;
+                }
+                auto current = output(j, 0);
+                return compute_element_type{output(j - 1, 0) - current,
+                                            output(j + 1, 0) - current,
+                                            output(j, 1) - current,
+                                            zero,
+                                            output(j - 1, 1) - current,
+                                            zero,
+                                            output(j + 1, 1) - current,
+                                            zero};
+            }));
+        const auto last_column = blaze::evaluate(
+            blaze::generate(columns, [&output, rows, columns, zero, zero_vector](std::size_t j) {
+                if (j == 0 || j == rows - 1) {
+                    return zero_vector;
+                }
+                auto current = output(j, columns - 1);
+                return compute_element_type{output(j - 1, columns - 1) - current,
+                                            output(j + 1, columns - 1) - current,
+                                            zero,
+                                            output(j, columns - 2) - current,
+                                            zero,
+                                            output(j - 1, columns - 2) - current,
+                                            zero,
+                                            output(j + 1, columns - 2)};
+            }));
+        for (std::size_t j = 0; j < columns; ++j) {
+            nabla(0, j) = first_row[j];
+            nabla(rows - 1, j) = last_row[j];
+        }
+
+        for (std::size_t j = 0; j < columns; ++j) {
+            nabla(j, 0) = first_column[j];
+            nabla(j, columns - 1) = last_column[j];
+        }
+
         auto current = output(0, 0);
-        const auto zero = output_element_type(0);
         nabla(0, 0) = {zero,
                        output(1, 0) - current,
                        output(0, 1) - current,
