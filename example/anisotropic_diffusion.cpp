@@ -42,9 +42,8 @@ int main(int argc, char* argv[])
     auto view = gil::view(input);
     auto mat = flash::to_matrix_channeled(view);
     auto diffused = flash::anisotropic_diffusion(mat, kappa, iteration_count);
-    auto remapped = flash::remap_to_channeled<std::uint8_t>(diffused);
 
-    auto image = flash::from_matrix<gil::rgb8_image_t>(remapped);
+    auto image = flash::from_matrix<gil::rgb8_image_t>(diffused);
     auto diffused_min = flash::channelwise_min(diffused);
     auto diffused_max = flash::channelwise_max(diffused);
 
