@@ -17,7 +17,7 @@
 namespace gil = boost::gil;
 
 template <typename ImageType>
-void run(const std::string& input_file, double kappa, std::uint64_t iteration_count,
+void run(const std::string& input_file, double delta_t, double kappa, std::uint64_t iteration_count,
          const std::string& output_file)
 {
 
@@ -26,7 +26,7 @@ void run(const std::string& input_file, double kappa, std::uint64_t iteration_co
 
     auto view = gil::view(input);
     auto mat = flash::to_matrix_channeled(view);
-    auto diffused = flash::anisotropic_diffusion(mat, kappa, iteration_count);
+    auto diffused = flash::anisotropic_diffusion(mat, delta_t, kappa, iteration_count);
 
     auto image = flash::from_matrix<ImageType>(diffused);
     auto diffused_min = flash::channelwise_min(diffused);
@@ -64,8 +64,9 @@ int main(int argc, char* argv[])
 
     CLI11_PARSE(app, argc, argv);
 
-    if (gray_mode)
-        run<gil::gray8_image_t>(input_file, kappa, iteration_count, output_file);
-    else
-        run<gil::rgb8_image_t>(input_file, kappa, iteration_count, output_file);
+    const double delta_t = 1.0 / 4.0;
+    if (!gray_mode)
+        run<gil::rgb8_image_t>(input_file, delta_t, kappa, iteration_count, output_file);
+    // else
+    //     run<gil::gray8_image_t>(input_file, delta_t, kappa, iteration_count, output_file);
 }
