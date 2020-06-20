@@ -2,6 +2,7 @@
 #define BLAZING_GIL_NUMERIC_HPP
 
 #include <blaze/Blaze.h>
+#include <blaze/math/expressions/DMatGenExpr.h>
 #include <blaze/math/typetraits/IsVector.h>
 #include <blaze/math/typetraits/UnderlyingElement.h>
 #include <blaze/math/views/Submatrix.h>
@@ -288,7 +289,6 @@ auto anisotropic_diffusion(const blaze::DenseMatrix<MT, StorageOrder>& input, do
                            double>;
     using compute_element_type = blaze::StaticVector<output_element_type, 4>;
     using output_matrix_type = blaze::DynamicMatrix<output_element_type, OutputStorageOrder>;
-    using compute_matrix_type = blaze::DynamicMatrix<compute_element_type, StorageOrder>;
 
     const auto rows = (~input).rows();
     const auto columns = (~input).columns();
@@ -296,41 +296,25 @@ auto anisotropic_diffusion(const blaze::DenseMatrix<MT, StorageOrder>& input, do
     auto output_area = blaze::submatrix(output, 1, 1, rows, columns);
     output_area = input;
 
-    compute_matrix_type nabla(rows, columns);
-    compute_matrix_type diffusivity(rows, columns);
-
     for (std::uint64_t counter = 0; counter < iteration_count; ++counter) {
-        nabla = blaze::generate(
+        output_area = blaze::generate(
             rows,
             columns,
-            [&output, rows, columns](std::size_t relative_i, std::size_t relative_j) {
+            [&output, kappa, delta_t](std::size_t relative_i, std::size_t relative_j) {
                 auto i = relative_i + 1;
                 auto j = relative_j + 1;
                 const auto& current = output(i, j);
-                compute_element_type result{output(i - 1, j) - current,
-                                            output(i + 1, j) - current,
-                                            output(i, j - 1) - current,
-                                            output(i, j + 1) - current};
-                return result;
+                compute_element_type nabla{output(i - 1, j) - current,
+                                           output(i + 1, j) - current,
+                                           output(i, j - 1) - current,
+                                           output(i, j + 1) - current};
+                compute_element_type diffusivity = blaze::map(nabla, [kappa](auto value) {
+                    value /= kappa;
+                    return blaze::exp(-value * value);
+                });
+
+                return blaze::evaluate(current + blaze::sum(nabla * diffusivity) * delta_t);
             });
-
-        diffusivity = blaze::map(nabla, [kappa](auto value) {
-            value /= kappa;
-            value *= value;
-            return blaze::exp(-value);
-        });
-
-        auto product = nabla % diffusivity;
-        auto sum = blaze::map(product, [](const auto value) {
-            // if constexpr (std::is_same_v<double, decltype(value)>) {
-            //     return value;
-            // } else {
-            //     return blaze::sum(value);
-            // }
-            return blaze::sum(value);
-        });
-
-        output_area = output_area + sum * delta_t;
     }
 
     return output_matrix_type(output_area);

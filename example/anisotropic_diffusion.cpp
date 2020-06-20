@@ -67,6 +67,6 @@ int main(int argc, char* argv[])
     const double delta_t = 1.0 / 4.0;
     if (!gray_mode)
         run<gil::rgb8_image_t>(input_file, delta_t, kappa, iteration_count, output_file);
-    // else
-    //     run<gil::gray8_image_t>(input_file, delta_t, kappa, iteration_count, output_file);
+    else
+        run<gil::gray8_image_t>(input_file, delta_t, kappa, iteration_count, output_file);
 }
