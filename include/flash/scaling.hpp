@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BLAZING_GIL_SCALING_HPP
+#define BLAZING_GIL_SCALING_HPP
 
 #include <blaze/Blaze.h>
 
@@ -126,3 +127,5 @@ scale(lanczos_method, const blaze::DynamicMatrix<T>& source,
         });
 }
 } // namespace flash
+
+#endif

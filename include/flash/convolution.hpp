@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BLAZING_GIL_CONVOLUTION_HPP
+#define BLAZING_GIL_CONVOLUTION_HPP
 
 #include <blaze/Blaze.h>
 
@@ -90,3 +91,5 @@ auto convolve(const blaze::DenseMatrix<MT, SO>& source,
     return result;
 }
 } // namespace flash
+
+#endif

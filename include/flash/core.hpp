@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BLAZING_GIL_CORE_HPP
+#define BLAZING_GIL_CORE_HPP
 
 #include <algorithm>
 #include <blaze/Blaze.h>
@@ -373,7 +374,7 @@ auto remap_to_channeled(const blaze::DenseMatrix<MT, SO>& source,
 
     return blaze::evaluate(blaze::map(
         (~source),
-        [src_min_elems, dst_min_elems, src_range_length, dst_range_length, vector_size](
+        [src_min_elems, dst_min_elems, src_range_length, dst_range_length](
             const source_vector_type& elem) {
             result_vector_type result{};
             for (std::size_t i = 0; i < vector_size; ++i) {
@@ -523,3 +524,5 @@ auto pad(const blaze::DenseMatrix<MT, StorageOrder>& source, std::size_t pad_cou
 }
 
 } // namespace flash
+
+#endif

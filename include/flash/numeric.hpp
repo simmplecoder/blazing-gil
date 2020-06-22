@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BLAZING_GIL_NUMERIC_HPP
+#define BLAZING_GIL_NUMERIC_HPP
 
 #include <blaze/Blaze.h>
 #include <flash/convolution.hpp>
@@ -164,3 +165,5 @@ anisotropic_diffusion(const blaze::DynamicMatrix<std::uint8_t>& input,
     return output;
 }
 } // namespace flash
+
+#endif
