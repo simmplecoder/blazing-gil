@@ -8,3 +8,5 @@ doc/docs_output
 cmake-build-debug/
 cmake-build-release/
 cmake/blazing-gilConfig.cmake
+
+.DS_Store
