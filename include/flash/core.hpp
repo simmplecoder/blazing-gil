@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BLAZING_GIL_CORE_HPP
+#define BLAZING_GIL_CORE_HPP
 
 #include <algorithm>
 #include <blaze/Blaze.h>
@@ -523,3 +524,5 @@ auto pad(const blaze::DenseMatrix<MT, StorageOrder>& source, std::size_t pad_cou
 }
 
 } // namespace flash
+
+#endif
