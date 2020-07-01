@@ -8,6 +8,8 @@
 #include <blaze/math/views/Submatrix.h>
 #include <flash/convolution.hpp>
 
+#include <spdlog/spdlog.h>
+
 #include <algorithm>
 #include <cstdint>
 #include <iostream>
@@ -278,6 +280,19 @@ struct identify_type;
 //     return output;
 // }
 
+std::vector<double> build_exponent_table(unsigned int channel_count, double sigma)
+{
+    const double sigma_squared = 1.0 / (sigma * sigma);
+    std::vector<double> exponent_table(255 * channel_count);
+    spdlog::info("sigma^2: {}, size: {}", sigma_squared, exponent_table.size());
+    for (double i = 0; i < exponent_table.size(); ++i) {
+        spdlog::info("exponent: {}", -(i * i) * sigma_squared);
+        exponent_table[i] = std::exp(-(i * i) * sigma_squared);
+    }
+
+    return exponent_table;
+}
+
 template <typename MT, bool StorageOrder, bool OutputStorageOrder = StorageOrder>
 auto anisotropic_diffusion(const blaze::DenseMatrix<MT, StorageOrder>& input, double delta_t,
                            double kappa, std::uint64_t iteration_count)
@@ -287,37 +302,48 @@ auto anisotropic_diffusion(const blaze::DenseMatrix<MT, StorageOrder>& input, do
         std::conditional_t<blaze::IsVector_v<element_type>,
                            blaze::StaticVector<double, element_type::size()>,
                            double>;
-    using compute_element_type = blaze::StaticVector<output_element_type, 4>;
+    auto exponent_table =
+        build_exponent_table(element_type::size(), kappa * element_type::size() * 255.0);
+    spdlog::info("{}", fmt::join(exponent_table, ", "));
+    using compute_element_type = blaze::StaticVector<output_element_type, 8>;
     using output_matrix_type = blaze::DynamicMatrix<output_element_type, OutputStorageOrder>;
 
     const auto rows = (~input).rows();
     const auto columns = (~input).columns();
-    output_matrix_type output(rows + 2, columns + 2, output_element_type(0));
-    auto output_area = blaze::submatrix(output, 1, 1, rows, columns);
-    output_area = input;
+    output_matrix_type scratch(rows + 2, columns + 2, output_element_type(0));
+    auto scratch_area = blaze::submatrix(scratch, 1, 1, rows, columns);
+    scratch_area = input;
 
     for (std::uint64_t counter = 0; counter < iteration_count; ++counter) {
-        output_area = blaze::generate(
+        scratch_area = blaze::generate(
             rows,
             columns,
-            [&output, kappa, delta_t](std::size_t relative_i, std::size_t relative_j) {
-                auto i = relative_i + 1;
-                auto j = relative_j + 1;
-                const auto& current = output(i, j);
-                compute_element_type nabla{output(i - 1, j) - current,
-                                           output(i + 1, j) - current,
-                                           output(i, j - 1) - current,
-                                           output(i, j + 1) - current};
-                compute_element_type diffusivity = blaze::map(nabla, [kappa](auto value) {
-                    value /= kappa;
-                    return blaze::exp(-value * value);
-                });
+            [&scratch, &exponent_table, kappa, delta_t](std::size_t absolute_i,
+                                                        std::size_t absolute_j) {
+                auto i = absolute_i + 1;
+                auto j = absolute_j + 1;
+                const auto& current = scratch(i, j);
+                compute_element_type nabla{scratch(i - 1, j) - current,
+                                           scratch(i + 1, j) - current,
+                                           scratch(i, j - 1) - current,
+                                           scratch(i, j + 1) - current,
+                                           scratch(i - 1, j - 1) - current,
+                                           scratch(i - 1, j + 1) - current,
+                                           scratch(i + 1, j - 1) - current,
+                                           scratch(i + 1, j + 1) - current};
+                compute_element_type diffusivity =
+                    blaze::map(nabla, [&exponent_table, kappa](auto value) {
+                        return output_element_type(exponent_table[std::clamp(
+                            static_cast<int>(blaze::sum(value)),
+                            0,
+                            255 * static_cast<int>(element_type::size()))]);
+                    });
 
                 return blaze::evaluate(current + blaze::sum(nabla * diffusivity) * delta_t);
             });
     }
 
-    return output_matrix_type(output_area);
+    return output_matrix_type(scratch_area);
 }
 } // namespace flash
 

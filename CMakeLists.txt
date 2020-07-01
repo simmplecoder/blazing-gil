@@ -64,12 +64,14 @@ if (USE_CONAN)
       CONAN_PKG::libjpeg
       CONAN_PKG::libpng
       CONAN_PKG::libtiff
+      CONAN_PKG::spdlog
       Boost::headers
       Boost::filesystem)
 else()
   find_package(JPEG REQUIRED)
   find_package(PNG REQUIRED)
   find_package(TIFF REQUIRED)
+  find_package(spdlog REQUIRED)
   target_include_directories(GIL
     INTERFACE
       ${JPEG_INCLUDE_DIR})
@@ -79,7 +81,8 @@ else()
       PNG::PNG
       TIFF::TIFF
       Boost::headers
-      Boost::filesystem)
+      Boost::filesystem
+      spdlog::spdlog)
 endif()
 
 ### create the library target - blazing-gil
