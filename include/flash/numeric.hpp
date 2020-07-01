@@ -315,6 +315,10 @@ auto anisotropic_diffusion(const blaze::DenseMatrix<MT, StorageOrder>& input, do
     scratch_area = input;
 
     for (std::uint64_t counter = 0; counter < iteration_count; ++counter) {
+        blaze::row(scratch, 0) = blaze::row(scratch, 1);
+        blaze::row(scratch, rows + 1) = blaze::row(scratch, rows);
+        blaze::column(scratch, 0) = blaze::column(scratch, 1);
+        blaze::column(scratch, columns + 1) = blaze::column(scratch, columns);
         scratch_area = blaze::generate(
             rows,
             columns,
