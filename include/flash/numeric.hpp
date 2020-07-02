@@ -314,12 +314,22 @@ auto anisotropic_diffusion(const blaze::DenseMatrix<MT, StorageOrder>& input, do
     auto scratch_area = blaze::submatrix(scratch, 1, 1, rows, columns);
     scratch_area = input;
 
+    output_matrix_type scratch2(rows + 2, columns + 2);
+    auto scratch_area2 = blaze::submatrix(scratch2, 1, 1, rows, columns);
     for (std::uint64_t counter = 0; counter < iteration_count; ++counter) {
+        // borders
         blaze::row(scratch, 0) = blaze::row(scratch, 1);
         blaze::row(scratch, rows + 1) = blaze::row(scratch, rows);
         blaze::column(scratch, 0) = blaze::column(scratch, 1);
         blaze::column(scratch, columns + 1) = blaze::column(scratch, columns);
-        scratch_area = blaze::generate(
+
+        // corners
+        scratch(0, 0) = scratch(1, 1);
+        scratch(0, columns + 1) = scratch(0, columns);
+        scratch(rows + 1, 0) = scratch(rows, 0);
+        scratch(rows + 1, columns + 1) = scratch(rows, columns);
+
+        scratch_area2 = blaze::generate(
             rows,
             columns,
             [&scratch, &exponent_table, kappa, delta_t](std::size_t absolute_i,
@@ -330,21 +340,16 @@ auto anisotropic_diffusion(const blaze::DenseMatrix<MT, StorageOrder>& input, do
                 compute_element_type nabla{scratch(i - 1, j) - current,
                                            scratch(i + 1, j) - current,
                                            scratch(i, j - 1) - current,
-                                           scratch(i, j + 1) - current,
-                                           scratch(i - 1, j - 1) - current,
-                                           scratch(i - 1, j + 1) - current,
-                                           scratch(i + 1, j - 1) - current,
-                                           scratch(i + 1, j + 1) - current};
+                                           scratch(i, j + 1) - current};
                 compute_element_type diffusivity =
                     blaze::map(nabla, [&exponent_table, kappa](auto value) {
-                        return output_element_type(exponent_table[std::clamp(
-                            static_cast<int>(blaze::sum(value)),
-                            0,
-                            255 * static_cast<int>(element_type::size()))]);
+                        value /= kappa;
+                        return output_element_type(blaze::exp(-(value * value)));
                     });
 
                 return blaze::evaluate(current + blaze::sum(nabla * diffusivity) * delta_t);
             });
+        std::swap(scratch, scratch2);
     }
 
     return output_matrix_type(scratch_area);
