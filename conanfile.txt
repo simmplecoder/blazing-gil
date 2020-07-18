@@ -10,6 +10,7 @@ libpng/1.6.37@bincrafters/stable
 libjpeg/9c@bincrafters/stable
 libtiff/4.0.9@bincrafters/stable
 CLI11/1.9.0@cliutils/stable
+spdlog/1.4.2@bincrafters/stable
 
 [generators]
 cmake

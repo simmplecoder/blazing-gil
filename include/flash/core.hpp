@@ -523,6 +523,5 @@ auto pad(const blaze::DenseMatrix<MT, StorageOrder>& source, std::size_t pad_cou
     return result;
 }
 
-} // namespace flash
-
 #endif
+} // namespace flash
