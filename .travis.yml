@@ -85,12 +85,27 @@ install:
 #inside 3rdparty 
   - git clone https://github.com/catchorg/Catch2.git
   - cd Catch2
-#inside 3rdpart/Catch2
+#inside 3rdparty/Catch2
   - mkdir build && cd build
   - $CMAKE_PATH -DCATCH_BUILD_TESTING=OFF ..
   - sudo make install
   - cd ../..
 #inside 3rdparty
+  - git clone https://github.com/fmtlib/fmt.git
+  - cd fmt
+# inside 3rdparty/fmt  
+  - mkdir build && cd build
+  - cmake -DFMT_TEST=OFF -DFMT_DOC=OFF ..
+  - sudo make install
+  - cd ../..
+#inside 3rdparty
+  - git clone https://github.com/gabime/spdlog.git
+  - cd spdlog
+#inside 3rdparty/spdlog
+  - mkdir build && cd build
+  - cmake -DSPDLOG_FMT_EXTERNAL=ON -DSPDLOG_BUILD_EXAMPLE=OFF ..
+  - sudo make install
+  - cd ../..
 # finished installing dependencies, configuring project
   - cd ../
 #inside project directory
