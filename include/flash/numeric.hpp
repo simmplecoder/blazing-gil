@@ -168,6 +168,57 @@ auto anisotropic_diffusion(const blaze::DenseMatrix<MT, StorageOrder>& input, do
 
     return output_matrix_type(scratch_area);
 }
+
+struct hough_parameter {
+    double start_point;
+    double step_size;
+    std::size_t step_count;
+};
+
+template <typename MT, bool StorageOrder>
+blaze::DynamicMatrix<double> hough_line_transform(const blaze::DenseMatrix<MT, StorageOrder>& image,
+                                                  const hough_parameter& r,
+                                                  const hough_parameter& theta)
+{
+    blaze::DynamicMatrix<double> parameter_space(r.step_count, theta.step_count);
+    double r_lower_bound = r.start_point;
+    double r_upper_bound = r_lower_bound + r.step_size * r.step_count;
+
+    for (std::size_t i = 0; i < (~image).rows(); ++i) {
+        for (std::size_t j = 0; j < (~image).columns(); ++j) {
+            if (!(~image)(i, j)) {
+                continue;
+            }
+            for (std::size_t theta_index = 0; theta_index < theta.step_count; ++theta_index) {
+                double theta_current = theta.start_point + theta.step_size * theta_index;
+                std::size_t upper_r =
+                    std::ceil(j * std::cos(theta_current) + i * std::sin(theta_current));
+                std::size_t lower_r =
+                    std::floor(j * std::cos(theta_current) + i * std::sin(theta_current));
+                spdlog::info("r_current={} at ({}, {})", upper_r, i, j);
+                if (upper_r >= r_lower_bound && upper_r <= r_upper_bound) {
+                    auto r_index = std::round((upper_r - r.start_point) / r.step_size);
+                    if (r_index < r.step_count) {
+                        parameter_space(r_index, theta_index) += 1;
+                        spdlog::info(
+                            "r_index={} at ({}, {}), theta={}", r_index, i, j, theta_current);
+                    }
+                }
+
+                if (lower_r >= r_lower_bound && lower_r <= r_upper_bound) {
+                    auto r_index = std::round((lower_r - r.start_point) / r.step_size);
+                    if (r_index < r.step_count) {
+                        parameter_space(r_index, theta_index) += 1;
+                        spdlog::info(
+                            "r_index={} at ({}, {}), theta={}", r_index, i, j, theta_current);
+                    }
+                }
+            }
+        }
+    }
+
+    return parameter_space;
+}
 } // namespace flash
 
 #endif
