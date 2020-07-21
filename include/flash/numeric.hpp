@@ -191,27 +191,16 @@ blaze::DynamicMatrix<double> hough_line_transform(const blaze::DenseMatrix<MT, S
             }
             for (std::size_t theta_index = 0; theta_index < theta.step_count; ++theta_index) {
                 double theta_current = theta.start_point + theta.step_size * theta_index;
-                std::size_t upper_r =
-                    std::ceil(j * std::cos(theta_current) + i * std::sin(theta_current));
-                std::size_t lower_r =
-                    std::floor(j * std::cos(theta_current) + i * std::sin(theta_current));
-                spdlog::info("r_current={} at ({}, {})", upper_r, i, j);
-                if (upper_r >= r_lower_bound && upper_r <= r_upper_bound) {
-                    auto r_index = std::round((upper_r - r.start_point) / r.step_size);
-                    if (r_index < r.step_count) {
-                        parameter_space(r_index, theta_index) += 1;
-                        spdlog::info(
-                            "r_index={} at ({}, {}), theta={}", r_index, i, j, theta_current);
-                    }
+                std::size_t current_r =
+                    std::round(j * std::cos(theta_current) + i * std::sin(theta_current));
+                spdlog::info("r_current={} at ({}, {})", current_r, i, j);
+                if (current_r < r_lower_bound || current_r > r_upper_bound) {
+                    continue;
                 }
-
-                if (lower_r >= r_lower_bound && lower_r <= r_upper_bound) {
-                    auto r_index = std::round((lower_r - r.start_point) / r.step_size);
-                    if (r_index < r.step_count) {
-                        parameter_space(r_index, theta_index) += 1;
-                        spdlog::info(
-                            "r_index={} at ({}, {}), theta={}", r_index, i, j, theta_current);
-                    }
+                auto r_index = std::round((current_r - r.start_point) / r.step_size);
+                if (r_index < r.step_count) {
+                    parameter_space(r_index, theta_index) += 1;
+                    spdlog::info("r_index={} at ({}, {}), theta={}", r_index, i, j, theta_current);
                 }
             }
         }

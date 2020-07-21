@@ -13,17 +13,17 @@ int main()
     const std::size_t size = 32;
     blaze::DynamicMatrix<gil::uint8_t> input(size, size);
 
-    for (std::size_t i = 0; i < size - 1; ++i) {
+    for (std::size_t i = 0; i < size; ++i) {
         input(size - i - 1, i) = 1;
     }
-    for (std::size_t i = 0; i < size; ++i) {
-        for (std::size_t j = 0; j < size; ++j) {
+    for (std::ptrdiff_t i = size - 1; i >= 0; --i) {
+        for (std::ptrdiff_t j = 0; j < static_cast<std::ptrdiff_t>(size); ++j) {
             fmt::print("{} ", input(i, j));
         }
         fmt::print("\n");
     }
 
-    const double _45_degrees = flash::pi / 8.0;
+    const double _45_degrees = flash::pi / 4.0;
     const double _1_degree = flash::pi / 180.0;
     const double _5_degrees = flash::pi / 36.0;
     const std::size_t theta_step_count = 10;
