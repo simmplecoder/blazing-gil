@@ -12,7 +12,8 @@ foreach(example
     bilinear_interpolation_scaling
     lanczos_scaling
     matrix_channeled
-    hough_line_transform)
+    hough_line_transform
+    hough_circle_transform)
     add_executable(${example} ${example}.cpp)
     target_link_libraries(${example} PRIVATE
         blazing-gil 
